@@ -15,9 +15,16 @@ struct Spline
     typedef SimulatorTypes::ValueType ValueType;
     constexpr static int PolyOrder = 5;
 
-    Spline(Eigen::MatrixXd points);
-    Eigen::Array<ValueType, 2, 1> operator() (ValueType parameter, uint32_t derivative = 0) const;
-    Eigen::Matrix<ValueType, 2, 2> frame(ValueType parameter) const;
+    /** Default Constructor for Spline
+     *
+     * This should only be used for testing purposes. It produces a single
+     * 5th order polynomial.
+     */
+    Spline();
+    Spline(Eigen::Matrix<Spline::ValueType, 2, Eigen::Dynamic> points);
+    Eigen::Matrix<ValueType, 2, 1> operator() (ValueType parameter, uint32_t derivative = 0) const;
+    Eigen::Matrix<ValueType, 2, 2> frame(ValueType parameter, uint32_t derivative = 0) const;
+    ValueType speed(ValueType parameter) const;
 
     class SplineException{ };
     class InvalidParameterException : public SplineException { };

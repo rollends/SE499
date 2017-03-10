@@ -2,22 +2,27 @@
 
 #include "rose499/diffdrive.hpp"
 
-DriveSystem::DriveSystem(DriveController& c)
-  : control(c) { }
+using namespace Eigen;
 
-DriveSystem::DriveSystem(DriveSystem const & sys)
-  : control(sys.control) { }
-
-void DriveSystem::operator() (StateType x,
-                              StateType& dxdt,
-                              double t)
+void DriveSystem::step( StateType x,
+                        StateType& dxdt,
+                        double t,
+                        ValueType turn,
+                        ValueType speed )
 {
-    auto speed = control.genSpeedControl(x, t);
-    auto turn = control.genTurnControl(x, t);
+    mState = Map<Matrix<ValueType, 3, 1>>(x.data());
+    mFlow << speed * std::cos(mState(2)),
+             speed * std::sin(mState(2)),
+             turn;
+    Map<Matrix<ValueType, 3, 1>>(dxdt.data()) = mFlow;
+}
 
-    dxdt[0] = speed * std::cos(x[3]);
-    dxdt[1] = speed * std::sin(x[3]);
-    dxdt[2] = turn;
+DriveController::DriveController(DriveSystem & driver)
+  : mSystem(driver) { }
+
+void DriveController::operator() (StateType x, StateType& dxdt, double t)
+{
+    mSystem.step(x, dxdt, t, genTurnControl(x, t), genSpeedControl(x, t));
 }
 
 DriveController::ValueType DriveController::genTurnControl(StateType, double)

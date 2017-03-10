@@ -17,7 +17,8 @@ SET(SimSrc	src/main.cpp
 			src/spline.cpp
 			src/quinticLevelSet.cpp
 			src/quinticJacobian.cpp
-			src/quinticHessian.cpp)
+			src/quinticHessian.cpp
+			src/sfcontrol.cpp)
 
 # Generate Executable
 ADD_EXECUTABLE(followingsim ${SimSrc})

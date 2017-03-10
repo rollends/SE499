@@ -12,18 +12,15 @@ int main(int argc, char* argv[])
     double dt = 0.05;
 
     // Initial Condition
-    DriveSystem::StateType x;
-    x[0] = 10;
-    x[1] = 0;
-
-    DriveController defaultControl;
+    DriveSystem::StateType x{ 10, 0 };
     odeint::controlled_runge_kutta< odeint::runge_kutta_dopri5<DriveSystem::StateType> > ode45;
 
-    DriveSystem robot(defaultControl);
+    DriveSystem robot;
+    DriveController defaultControl(robot);
     do
     {
         // If we fail
-        if(ode45.try_step(robot, x, T, dt))
+        if(ode45.try_step<DriveController&>(defaultControl, x, T, dt))
             continue;
 
         // If we pass store the system state to file.
