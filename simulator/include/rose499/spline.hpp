@@ -14,6 +14,7 @@ struct Spline
 {
     typedef SimulatorTypes::ValueType ValueType;
     constexpr static int PolyOrder = 5;
+    constexpr static int CoeffCount = PolyOrder + 1;
 
     /** Default Constructor for Spline
      *
@@ -26,15 +27,17 @@ struct Spline
     Eigen::Matrix<ValueType, 2, 2> frame(ValueType parameter, uint32_t derivative = 0) const;
     ValueType speed(ValueType parameter) const;
 
+    Eigen::Matrix<ValueType, Eigen::Dynamic, CoeffCount> poly() const;
+
     class SplineException{ };
     class InvalidParameterException : public SplineException { };
     class IncorrectSplineFormatException : public SplineException { };
 
 private:
     const int mSplineCount;
-    Eigen::Matrix<ValueType, Eigen::Dynamic, PolyOrder + 1> mPoly;
-    Eigen::Matrix<ValueType, Eigen::Dynamic, PolyOrder + 1> mDPoly;
-    Eigen::Matrix<ValueType, Eigen::Dynamic, PolyOrder + 1> mDDPoly;
+    Eigen::Matrix<ValueType, Eigen::Dynamic, CoeffCount> mPoly;
+    Eigen::Matrix<ValueType, Eigen::Dynamic, CoeffCount> mDPoly;
+    Eigen::Matrix<ValueType, Eigen::Dynamic, CoeffCount> mDDPoly;
 };
 
 #endif
