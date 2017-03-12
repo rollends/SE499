@@ -25,6 +25,7 @@ struct Spline
     Spline(Eigen::Matrix<Spline::ValueType, 2, Eigen::Dynamic> points);
     Eigen::Matrix<ValueType, 2, 1> operator() (ValueType parameter, uint32_t derivative = 0) const;
     Eigen::Matrix<ValueType, 2, 2> frame(ValueType parameter, uint32_t derivative = 0) const;
+    ValueType nearestPoint(Eigen::Matrix<ValueType, 2, 1>, ValueType estimate) const;
     ValueType speed(ValueType parameter) const;
 
     Eigen::Matrix<ValueType, Eigen::Dynamic, CoeffCount> poly() const;
@@ -34,7 +35,7 @@ struct Spline
     class IncorrectSplineFormatException : public SplineException { };
 
 private:
-    const int mSplineCount;
+    int mSplineCount;
     Eigen::Matrix<ValueType, Eigen::Dynamic, CoeffCount> mPoly;
     Eigen::Matrix<ValueType, Eigen::Dynamic, CoeffCount> mDPoly;
     Eigen::Matrix<ValueType, Eigen::Dynamic, CoeffCount> mDDPoly;

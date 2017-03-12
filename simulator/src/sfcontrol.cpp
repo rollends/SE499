@@ -1,7 +1,7 @@
 #include "rose499/sfcontrol.hpp"
 
 using namespace Eigen;
-
+#include <iostream>
 DriveController::ValueType SerretFrenetController::genTurnControl(DriveController::StateType x, double t )
 {
     using Matrix3T = Matrix<ValueType, 3, 1>;
@@ -35,13 +35,14 @@ DriveController::ValueType SerretFrenetController::genTurnControl(DriveControlle
           0, 1, 0;
 
     // Nearest Point
-    double lambda;
+    double lambda = path().nearestPoint(h, mOperatingLambda);
+    mOperatingLambda = lambda;
 
     // Formulate Linearized State
     Matrix2T xi;
-    Matrix2T s = mPath(lambda);
-    Matrix22T frame = mPath.frame(lambda);
-    Matrix22T dFrame = mPath.frame(lambda, 1);
+    Matrix2T s = path()(lambda);
+    Matrix22T frame = path().frame(lambda);
+    Matrix22T dFrame = path().frame(lambda, 1);
 
     auto e1 = frame.block<2, 1>(0, 0);
     auto e2 = frame.block<2, 1>(0, 1);
@@ -49,12 +50,25 @@ DriveController::ValueType SerretFrenetController::genTurnControl(DriveControlle
     mXi(0) = e2.dot(h - s);
     mXi(1) = e2.dot(dh * f);
 
-    auto dwdh = e1.transpose() / mPath.speed(lambda);
+    auto dwdh = e1.transpose() / path().speed(lambda);
     auto de2dx = dFrame.block<2, 1>(0, 1) * dwdh * dh;
 
     auto lff = (de2dx * f).dot( dh * f );
     auto lgf = (   e2    ).dot( dh * df * g );
-    auto ulin = 0;
+    auto ulin = -mXi(0) - sqrt(3) * mXi(1);
+    auto ucontrol = (ulin - lff) / lgf;
 
-    return (ulin - lff) / lgf;
+    assert(!isnan(lff) && !isinf(lff));
+    assert(!isnan(lgf) && !isinf(lgf));
+    assert(!isnan(ulin) && !isinf(ulin));
+    assert(!isnan(ucontrol) && !isinf(ucontrol));
+
+    return ucontrol;
 }
+
+SerretFrenetController::SerretFrenetController(DriveSystem& sys)
+  : mOperatingLambda(0), DriveController(sys) { }
+
+
+Spline::ValueType SerretFrenetController::operatingPoint() const { return mOperatingLambda; }
+Matrix<DriveController::ValueType, 2, 1> SerretFrenetController::linearizedState() const { return mXi; }

@@ -20,7 +20,8 @@ SET(SimSrc      src/diffdrive.cpp
                 src/quinticHessian.cpp
                 src/sfcontrol.cpp)
 
-SET(TestFiles   src/tests/testSpline.cpp)
+SET(TestFiles   src/tests/testSpline.cpp
+                src/tests/testSerretFrenetControl.cpp)
 
 # Generate Temporary Static lib
 ADD_LIBRARY(rose499 STATIC ${SimSrc})

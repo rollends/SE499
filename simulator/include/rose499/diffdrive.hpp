@@ -4,6 +4,7 @@
 #include <array>
 #include <Eigen/Core>
 #include "rose499/types.hpp"
+#include "rose499/spline.hpp"
 
 struct DriveSystem
 {
@@ -26,9 +27,14 @@ struct DriveController
 
     void operator() (StateType x, StateType& dxdt, double t);
 
+    void path( Spline );
+    Spline const & path() const;
+
 protected:
     virtual ValueType genSpeedControl(StateType x, double t);
     virtual ValueType genTurnControl(StateType x, double t);
+
+    Spline mPath;
 
 private:
     DriveSystem& mSystem;

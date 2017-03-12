@@ -2,6 +2,7 @@
 #define ROSE499_TYPES_HPP
 
 #include <Eigen/Core>
+#include <iostream>
 
 namespace SimulatorTypes
 {

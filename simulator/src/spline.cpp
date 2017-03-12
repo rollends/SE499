@@ -17,21 +17,6 @@ namespace
     using VectorXT = SimulatorTypes::VectorXT;
     using PolySpace = Array<ValueType, 1, Spline::CoeffCount>;
 
-    Matrix<ValueType, 2, Dynamic>
-    generateintermediates(Matrix<ValueType, 2, Dynamic> waypoints )
-    {
-        auto segmentCount = waypoints.cols() - 1;
-        Matrix<ValueType, 2, Dynamic> set(2, segmentCount * ResampleCount);
-
-        for(int i = 0; i < segmentCount; ++i)
-        {
-            set.block(0, ResampleCount * i, 1, ResampleCount) =
-                VectorXd::LinSpaced(11, waypoints(0, i), waypoints(0, i + 1)).block<1, ResampleCount>(0, 1);
-            set.block(1, ResampleCount * i, 1, ResampleCount) =
-                VectorXd::LinSpaced(11, waypoints(1, i), waypoints(1, i + 1)).block<1, ResampleCount>(0, 1);
-        }
-    }
-
     PolySpace polydiff(PolySpace poly)
     {
         PolySpace dpoly = PolySpace::Constant(0);
@@ -40,13 +25,21 @@ namespace
         return dpoly;
     }
 
+    PolySpace polydiffshift(PolySpace poly)
+    {
+        PolySpace dpoly = PolySpace::Constant(0);
+        dpoly.head(Spline::CoeffCount - 1) = poly.tail(Spline::CoeffCount - 1);
+        dpoly.head(Spline::CoeffCount - 1) *= Array<ValueType, Spline::CoeffCount - 1, 1>::LinSpaced(1, Spline::PolyOrder);
+        return dpoly;
+    }
+
     /**
      * Splines a 5th order polynomial through the waypoints that ensures C2
      * conditions are met.
      *
-     * If the system is underdetermined or overdetermined,
-     * least squares is used to solve the system. Otherwise a full pivot LU
-     * decomposition is used.
+     * If the system is normally underdetermined so polyfit normally calculates the
+     * right pseduo-inverse and performs a full pivot LU decomposition in order to
+     * solve for the coefficients.
      */
     Matrix<ValueType, Dynamic, Spline::CoeffCount>
     polyfit(Matrix<ValueType, 2, Dynamic> waypoints)
@@ -140,11 +133,11 @@ Spline::Spline(Matrix<Spline::ValueType, 2, Dynamic> points)
     mPoly = ::polyfit(points);
     for( auto i = 0; i < mPoly.rows(); ++i )
     {
-        mDPoly.row(i) = ::polydiff(mPoly.row(i));
+        mDPoly.row(i) = ::polydiffshift(mPoly.row(i));
     }
     for( auto i = 0; i < mPoly.rows(); ++i )
     {
-        mDDPoly.row(i) = ::polydiff(mDPoly.row(i));
+        mDDPoly.row(i) = ::polydiffshift(mDPoly.row(i));
     }
 }
 
@@ -173,7 +166,11 @@ Matrix<Spline::ValueType, 2, 2> Spline::frame(ValueType parameter, uint32_t deri
     if(derivative >= 1)
     {
         Matrix<ValueType, 2, 1> accel = (*this)(parameter, 2);
-        basis.col(0) = accel / speed - accel.dot(tangent) / (speed * speed) * basis.col(0);
+        basis.col(0) = ( accel - accel.dot(basis.col(0)) * basis.col(0) ) / speed;
+
+        // If we have a 0 curvature, generate the trivial basis (for {0})
+        if( !basis.col(0).isZero() )
+            basis.col(0) /= basis.col(0).norm();
     }
 
     if(derivative >= 2)
@@ -186,6 +183,36 @@ Matrix<Spline::ValueType, 2, 2> Spline::frame(ValueType parameter, uint32_t deri
     return basis;
 }
 
+Spline::ValueType Spline::nearestPoint(Matrix<ValueType, 2, 1> point, ValueType lambdaStar) const
+{
+    auto error =
+        [point, this](ValueType l) -> ValueType {
+            return (point - this->operator()(l)).squaredNorm();
+        };
+    auto gradient =
+        [point, this](ValueType l) -> ValueType {
+            Matrix<ValueType, 2, 1> verr = point - this->operator()(l);
+            return -2*verr.dot(this->operator()(l, 1));
+        };
+
+    double alpha = 1.0 / (10 * mSplineCount);
+    alpha = std::min(alpha, alpha / speed(lambdaStar));
+
+    do
+    {
+        ValueType estimate = lambdaStar - alpha * gradient(lambdaStar);
+        if( error(estimate) <= error(lambdaStar) )
+        {
+            lambdaStar = estimate;
+            alpha *= 1.2;
+        }
+        else
+            alpha *= 0.8;
+    } while( std::abs(alpha * gradient(lambdaStar)) > 1e-12 );
+
+    return lambdaStar;
+}
+
 Spline::ValueType Spline::speed(ValueType parameter) const
 {
     return (*this)(parameter, 1).norm();
@@ -195,10 +222,6 @@ Matrix<Spline::ValueType, 2, 1> Spline::operator() (ValueType parameter, uint32_
 {
     using Vector = Matrix<Spline::ValueType, 2, 1>;
     using PolySpace = Array<Spline::ValueType, CoeffCount, 1>;
-
-    // Parameter out of bounds
-    if( parameter < 0 || parameter > 1 )
-        throw InvalidParameterException();
 
     // Identically zero derivative
     if( derivative > PolyOrder )
@@ -210,7 +233,7 @@ Matrix<Spline::ValueType, 2, 1> Spline::operator() (ValueType parameter, uint32_
     value = pow(value, powers);
 
     // Choose spline based on parameter value.
-    int indSpline = std::min(mSplineCount - 1, (int)std::floor(mSplineCount * parameter));
+    int indSpline = std::max(0, std::min(mSplineCount - 1, (int)std::floor(mSplineCount * parameter)));
 
     // And evaluate!
     switch(derivative)

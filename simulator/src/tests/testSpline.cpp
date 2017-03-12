@@ -55,9 +55,9 @@ SCENARIO( "waypoints can be splined with a 5th order C^2 polynomial", "[spline]"
             {
                 for(auto i = 1; i < waypoints.cols() - 1; ++i)
                 {
-                    auto derivativeFromLeft = spline((i * 1.0) / SegmentCount, 1);
-                    auto derivativeFromRight = spline((i * 1.0) / SegmentCount, 1);
-                    REQUIRE( (derivativeFromLeft - derivativeFromRight).isZero() );
+                    auto derivativeFromLeft = spline((i * 1.0) / SegmentCount - 1e-12, 1);
+                    auto derivativeFromRight = spline((i * 1.0) / SegmentCount + 1e-12, 1);
+                    REQUIRE( (derivativeFromLeft - derivativeFromRight).norm() == Approx(0.0).margin(1e-12) );
                 }
             }
 
@@ -65,9 +65,36 @@ SCENARIO( "waypoints can be splined with a 5th order C^2 polynomial", "[spline]"
             {
                 for(auto i = 1; i < waypoints.cols() - 1; ++i)
                 {
-                    auto derivativeFromLeft = spline((i * 1.0) / SegmentCount, 2);
-                    auto derivativeFromRight = spline((i * 1.0) / SegmentCount, 2);
-                    REQUIRE( (derivativeFromLeft - derivativeFromRight).isZero() );
+                    auto derivativeFromLeft = spline((i * 1.0) / SegmentCount - 1e-12, 2);
+                    auto derivativeFromRight = spline((i * 1.0) / SegmentCount + 1e-12, 2);
+                    REQUIRE( (derivativeFromLeft - derivativeFromRight).norm() == Approx(0.0).margin(1e-12) );
+                }
+            }
+        }
+
+        GIVEN( "a working spline" )
+        {
+            Spline spline(waypoints);
+
+            WHEN( "finding the nearest point on the curve to the end point" )
+            {
+                Spline::ValueType lambda = spline.nearestPoint(waypoints.col(waypoints.cols()-1), 0.9);
+
+                THEN( "it ought to be 1")
+                {
+                    REQUIRE( lambda == Approx(1.0).margin(1e-12) );
+                }
+            }
+
+            WHEN( "finding the nearest point on the curve to some non-trivial point" )
+            {
+                auto point = Matrix<Spline::ValueType, 2, 1>::Constant(1);
+                Spline::ValueType lambda = spline.nearestPoint(point, 0.1);
+
+                THEN( "the tangent of the closest point on the curve should be orthogonal to the error" )
+                {
+                    CAPTURE( lambda );
+                    REQUIRE( spline(lambda, 1).dot(spline(lambda) - point) == Approx(0.0).margin(1e-12) );
                 }
             }
         }

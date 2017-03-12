@@ -34,3 +34,6 @@ DriveController::ValueType DriveController::genSpeedControl(StateType, double)
 {
     return 1;
 }
+
+void DriveController::path( Spline s ) { mPath = s; }
+Spline const & DriveController::path() const { return mPath; }
