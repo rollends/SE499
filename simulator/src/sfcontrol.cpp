@@ -56,7 +56,7 @@ DriveController::ValueType SerretFrenetController::genTurnControl(DriveControlle
     auto lff = (de2dx * f).dot( dh * f );
     auto lgf = (   e2    ).dot( dh * df * g );
     auto ulin = -mXi(0) - sqrt(3) * mXi(1);
-    auto ucontrol = (ulin - lff) / lgf;
+    auto ucontrol = (5 * ulin - lff) / lgf;
 
     assert(!isnan(lff) && !isinf(lff));
     assert(!isnan(lgf) && !isinf(lgf));
@@ -70,5 +70,23 @@ SerretFrenetController::SerretFrenetController(DriveSystem& sys)
   : mOperatingLambda(0), DriveController(sys) { }
 
 
+std::ostream& SerretFrenetController::printSpecificHeaders(std::ostream& s) const
+{
+    return s << ", lambdaStar, spline_ind, sigma_1, sigma_2, xi_1, xi_2";
+}
+
+std::ostream& SerretFrenetController::printSpecificData(std::ostream& s) const
+{
+    auto state = linearizedState();
+    auto lambda = operatingPoint();
+    auto sigma = path()(lambda);
+    return s << ", " << lambda
+             << ", " << path().splineIndexUsed(lambda)
+             << ", " << sigma[0]
+             << "," << sigma[1]
+             << ", " << state[0]
+             << "," << state[1];
+}
+
 Spline::ValueType SerretFrenetController::operatingPoint() const { return mOperatingLambda; }
-Matrix<DriveController::ValueType, 2, 1> SerretFrenetController::linearizedState() const { return mXi; }
+Matrix<DriveController::ValueType, 2, 1> const & SerretFrenetController::linearizedState() const { return mXi; }

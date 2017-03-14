@@ -13,15 +13,17 @@ INCLUDE_DIRECTORIES("${EIGEN3_INCLUDE_DIR}" "include/")
 FIND_PACKAGE(Boost 1.54 REQUIRED)
 
 # Source Files
-SET(SimSrc      src/diffdrive.cpp
-                src/spline.cpp
-                src/quinticLevelSet.cpp
-                src/quinticJacobian.cpp
-                src/quinticHessian.cpp
-                src/sfcontrol.cpp)
+SET(SimSrc  src/diffdrive.cpp
+            src/spline.cpp
+            src/quinticLevelSet.cpp
+            src/quinticJacobian.cpp
+            src/quinticHessian.cpp
+            src/sfcontrol.cpp
+            src/world.cpp)
 
 SET(TestFiles   src/tests/testSpline.cpp
-                src/tests/testSerretFrenetControl.cpp)
+                src/tests/testSerretFrenetControl.cpp
+                src/tests/testWorld.cpp)
 
 # Generate Temporary Static lib
 ADD_LIBRARY(rose499 STATIC ${SimSrc})

@@ -213,6 +213,11 @@ Spline::ValueType Spline::nearestPoint(Matrix<ValueType, 2, 1> point, ValueType 
     return lambdaStar;
 }
 
+int Spline::splineIndexUsed(ValueType parameter) const
+{
+    return std::max(0, std::min(mSplineCount - 1, (int)std::floor(mSplineCount * parameter)));
+}
+
 Spline::ValueType Spline::speed(ValueType parameter) const
 {
     return (*this)(parameter, 1).norm();
@@ -233,7 +238,7 @@ Matrix<Spline::ValueType, 2, 1> Spline::operator() (ValueType parameter, uint32_
     value = pow(value, powers);
 
     // Choose spline based on parameter value.
-    int indSpline = std::max(0, std::min(mSplineCount - 1, (int)std::floor(mSplineCount * parameter)));
+    int indSpline = splineIndexUsed(parameter);
 
     // And evaluate!
     switch(derivative)

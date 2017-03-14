@@ -5,6 +5,7 @@
 #include <Eigen/Core>
 #include "rose499/types.hpp"
 #include "rose499/spline.hpp"
+#include "rose499/world.hpp"
 
 struct DriveSystem
 {
@@ -13,7 +14,12 @@ struct DriveSystem
 
     void step(StateType x, StateType& dxdt, double t, ValueType turnControl, ValueType speedControl);
 
+    double time() const;
+    Eigen::Matrix<ValueType, 3, 1> const & state() const;
+    Eigen::Matrix<ValueType, 3, 1> const & flow() const;
+
 private:
+    double mTime;
     Eigen::Matrix<ValueType, 3, 1> mState;
     Eigen::Matrix<ValueType, 3, 1> mFlow;
 };
@@ -30,14 +36,27 @@ struct DriveController
     void path( Spline );
     Spline const & path() const;
 
+    std::ostream& printData(std::ostream&) const;
+    std::ostream& printHeaders(std::ostream&) const;
+
+    void updateKnownWorld(std::vector<World::Box> const & obstacles);
+
 protected:
     virtual ValueType genSpeedControl(StateType x, double t);
     virtual ValueType genTurnControl(StateType x, double t);
 
-    Spline mPath;
+    virtual std::ostream& printSpecificHeaders(std::ostream&) const;
+    virtual std::ostream& printSpecificData(std::ostream&) const;
 
 private:
+    Spline mPath;
     DriveSystem& mSystem;
+    World::RTree mKnownWorld;
 };
+
+namespace std
+{
+    std::ostream& operator << (std::ostream&, DriveController const &);
+}
 
 #endif

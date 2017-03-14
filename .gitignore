@@ -5,3 +5,5 @@ simulator/cmake_install.cmake
 simulator/followingsim
 simulator/testfollowingsim
 simulator/librose499*
+*.asv
+*.csv

@@ -27,6 +27,7 @@ struct Spline
     Eigen::Matrix<ValueType, 2, 2> frame(ValueType parameter, uint32_t derivative = 0) const;
     ValueType nearestPoint(Eigen::Matrix<ValueType, 2, 1>, ValueType estimate) const;
     ValueType speed(ValueType parameter) const;
+    int splineIndexUsed(ValueType parameter) const;
 
     Eigen::Matrix<ValueType, Eigen::Dynamic, CoeffCount> poly() const;
 
