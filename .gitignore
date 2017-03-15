@@ -7,3 +7,5 @@ simulator/testfollowingsim
 simulator/librose499*
 *.asv
 *.csv
+tmp/
+template

@@ -1,0 +1,54 @@
+
+\titleformat{\chapter}[display]
+   {\Huge\sffamily}
+   {\chaptertitlename\ \thechapter}{20pt}
+   {\titlerule\vspace{20pt}\Huge}
+ \titlespacing*{\chapter}{0pt}{0pt}{35pt}
+
+\titleformat*{\section}{\LARGE\sffamily}
+\titleformat*{\subsection}{\Large\sffamily}
+\titleformat*{\subsubsection}{\large\sffamily}
+
+% Spacing between entries of nomenclature list.
+\setlength{\nomitemsep}{-\parsep}
+
+% Set the header seperator
+\headsep = 15pt
+
+\xyoption{frame}
+
+\hypersetup{
+    pdfauthor = {Rollen D'Souza},
+    pdftitle = {SE499 Project Report - Path Following Controllers for a Differential Drive Robot},
+    pdfdisplaydoctitle = {true},
+    unicode = {true},
+    pdfsubject = {Dynamical systems, nonlinear systems, stability, path following controllers},
+    pdfkeywords = {nonlinear systems, stability, dynamical systems, path following controllers},
+    pdfcreator = {\LaTeX with \flqq hyperref \flqq package},
+    pdfproducer = {pdfLaTeX},
+    bookmarksnumbered,
+    pdfstartview={FitV},
+    colorlinks = true,
+    linkcolor = blue,
+    anchorcolor = red,
+    citecolor = red,
+    filecolor = blue,
+    urlcolor = red
+}
+
+% Changing the view of the nomenclature
+\renewcommand{\pagedeclaration}[1]{\hfill\hyperlink{page.#1}{\nobreakspace#1}}
+\renewcommand*{\glstextformat}[1]{\textcolor{red}{#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Customize the header footer
+\setlength{\headheight}{15.2pt}
+\fancyhf{}
+\fancyhead[L]{\ifthenelse{\isodd{\value{page}}}{{\sf \thepage
+      $\qquad$\leftmark}}{}}
+\fancyhead[R]{\ifthenelse{\isodd{\value{page}}}{}{{\sf  \rightmark  $\qquad$  \thepage}}}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[L]{{\sf Version 1.0.1663, \today}}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,0 +1,73 @@
+\documentclass[oneside, 11pt]{book}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Configuration
+%
+\input{packages.tex}
+\input{formatting.tex}
+
+\makeindex
+\makenomenclature
+\makeglossaries
+
+
+\author{{\sf Rollen S. D'Souza}\\
+        {\sf Software Engineering Undergraduate}\\
+        {\sf Department of Electrical \& Computer Engineering}}
+\title{\textbf{{\sf SE499 Report --- Path Following Controllers}}}
+\date{}
+
+\setcounter{tocdepth}{1}
+
+\bibliography{report.bib}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Document
+%
+\begin{document}
+
+% Title page
+\maketitle
+
+\frontmatter
+\section*{Acknowledgments}
+
+\begin{flushright}
+Rollen S. D'Souza\\
+University of Waterloo
+\end{flushright}
+
+\tableofcontents
+
+\printnomenclature[3cm]
+
+\cleardoublepage
+\phantomsection
+\addcontentsline{toc}{chapter}{Acronyms and Initialisms}
+\printglossary[title=Acronyms and Initialisms]
+
+%%%%%%%%%%%%      MAIN MATTER      %%%%%%%%%%%%
+\mainmatter
+\pagestyle{fancy}
+\renewcommand{\sectionmark}[1]{\markright{\thesection.\ #1}}
+
+%\include{./Chapter1/introduction}
+
+\backmatter
+\cleardoublepage
+\phantomsection
+\addcontentsline{toc}{chapter}{Bibliography}
+\printbibliography[heading=none]
+
+\cleardoublepage
+\phantomsection
+\addcontentsline{toc}{chapter}{Index}
+\markright{{\sc Index}}
+\printindex
+
+\end{document}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
