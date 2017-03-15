@@ -1,7 +1,7 @@
 #include "rose499/sfcontrol.hpp"
 
 using namespace Eigen;
-#include <iostream>
+
 DriveController::ValueType SerretFrenetController::genTurnControl(DriveController::StateType x, double t )
 {
     using Matrix3T = Matrix<ValueType, 3, 1>;

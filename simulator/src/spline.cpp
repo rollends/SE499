@@ -122,6 +122,13 @@ namespace
 
         return result;
     }
+
+
+    Spline::ApproximateSpline approximate(Matrix<ValueType, 2, Dynamic> poly)
+    {
+        Spline::ApproximateSpline spline;
+        return spline;
+    }
 }
 
 Spline::Spline(Matrix<Spline::ValueType, 2, Dynamic> points)
@@ -139,6 +146,7 @@ Spline::Spline(Matrix<Spline::ValueType, 2, Dynamic> points)
     {
         mDDPoly.row(i) = ::polydiffshift(mDPoly.row(i));
     }
+    mApproximation = ::approximate(mPoly);
 }
 
 Spline::Spline()
@@ -258,3 +266,4 @@ Matrix<Spline::ValueType, 2, 1> Spline::operator() (ValueType parameter, uint32_
 }
 
 Matrix<Spline::ValueType, Dynamic, Spline::CoeffCount> Spline::poly() const { return mPoly; }
+Spline::ApproximateSpline const & Spline::approximation() const { return mApproximation; }

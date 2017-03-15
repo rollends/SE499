@@ -1,9 +1,13 @@
 #ifndef ROSE499_SPLINE_HPP
 #define ROSE499_SPLINE_HPP
 
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/geometries.hpp>
 #include <cstdint>
 #include <Eigen/Core>
 #include "rose499/types.hpp"
+
+namespace geom = boost::geometry;
 
 /** 2D, 5th order spline data structure.
  *
@@ -12,7 +16,11 @@
  */
 struct Spline
 {
-    typedef SimulatorTypes::ValueType ValueType;
+    using ValueType = SimulatorTypes::ValueType;
+    using Point = geom::model::point<double, 2, geom::cs::cartesian>;
+    using Line = geom::model::linestring< Point >;
+    using ApproximateSpline = std::vector< Line >;
+
     constexpr static int PolyOrder = 5;
     constexpr static int CoeffCount = PolyOrder + 1;
 
@@ -28,6 +36,7 @@ struct Spline
     ValueType nearestPoint(Eigen::Matrix<ValueType, 2, 1>, ValueType estimate) const;
     ValueType speed(ValueType parameter) const;
     int splineIndexUsed(ValueType parameter) const;
+    ApproximateSpline const & approximation() const;
 
     Eigen::Matrix<ValueType, Eigen::Dynamic, CoeffCount> poly() const;
 
@@ -40,6 +49,7 @@ private:
     Eigen::Matrix<ValueType, Eigen::Dynamic, CoeffCount> mPoly;
     Eigen::Matrix<ValueType, Eigen::Dynamic, CoeffCount> mDPoly;
     Eigen::Matrix<ValueType, Eigen::Dynamic, CoeffCount> mDDPoly;
+    ApproximateSpline mApproximation;
 };
 
 #endif
