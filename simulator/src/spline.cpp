@@ -146,7 +146,7 @@ Spline::Spline(Matrix<Spline::ValueType, 2, Dynamic> points)
     {
         mDDPoly.row(i) = ::polydiffshift(mDPoly.row(i));
     }
-    mApproximation = ::approximate(mPoly);
+    //mApproximation = ::approximate(mPoly);
 }
 
 Spline::Spline()

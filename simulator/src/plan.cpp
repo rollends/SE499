@@ -1,4 +1,3 @@
-#include <boost/geometry/geometries/register/point.hpp>
 #include <Eigen/Core>
 #include <list>
 #include <map>
@@ -8,14 +7,7 @@
 namespace geom = boost::geometry;
 
 using Point = World::Point;
-
-struct TaggedPoint
-{
-    double x, y;
-    int tag;
-};
-
-BOOST_GEOMETRY_REGISTER_POINT_2D(TaggedPoint, double, geom::cs::cartesian, x, y)
+using TaggedPoint = std::pair< Point, int >;
 
 std::list< Point > planRRT(     World::RTree knownWorld,
                                 double xMax,
@@ -28,7 +20,7 @@ std::list< Point > planRRT(     World::RTree knownWorld,
     std::mt19937_64 engine;
     std::uniform_real_distribution<> samplerX(0, xMax), samplerY(0, yMax);
 
-    TaggedPoint lastPoint = TaggedPoint{initialPoint.get<0>(), initialPoint.get<1>(), 0};
+    TaggedPoint lastPoint(initialPoint, 0);
 
     geom::index::rtree< TaggedPoint, geom::index::linear<2, 1> > setPoints;
     std::map< uint32_t, uint32_t > backEdges;
@@ -39,52 +31,52 @@ std::list< Point > planRRT(     World::RTree knownWorld,
     setPoints.insert( lastPoint );
     listPoints.push_back( lastPoint );
     int indTaggedPoint = 1;
-    while( Eigen::Vector2d(lastPoint.x - goal.get<0>(), lastPoint.y - goal.get<1>()).norm() >= radius )
+    while( Eigen::Vector2d( lastPoint.first.get<0>() - goal.get<0>(),
+                            lastPoint.first.get<1>() - goal.get<1>() ).norm() >= radius )
     {
-      RetryRandomPoint:
         setNearest.clear();
         setCollisions.clear();
 
-        auto randomPoint = TaggedPoint{ samplerX(engine), samplerY(engine), indTaggedPoint };
+        auto randomPoint = TaggedPoint(Point(samplerX(engine), samplerY(engine)), indTaggedPoint);
+        Eigen::Vector2d eigRandomPoint(randomPoint.first.get<0>(), randomPoint.first.get<1>());
 
-        geom::index::query(setPoints, geom::index::nearest(randomPoint, 1), std::back_inserter(setNearest));
+        // Just make sure this isn't a crap point that is inside an obstacle.
+        knownWorld.query( geom::index::intersects(randomPoint.first), std::back_inserter(setCollisions));
+        if( !setCollisions.empty() )
+            continue;
+
+        // find nearest point in our set
+        setPoints.query( geom::index::nearest(randomPoint.first, 10), std::back_inserter(setNearest) );
+        std::sort(  setNearest.begin(),
+                    setNearest.end(),
+                    [eigRandomPoint]( TaggedPoint a, TaggedPoint b){
+                        return  (Eigen::Vector2d(a.first.get<0>(), a.first.get<1>()) - eigRandomPoint).norm()
+                                <
+                                (Eigen::Vector2d(b.first.get<0>(), b.first.get<1>()) - eigRandomPoint).norm();
+                    } );
         TaggedPoint nearestPoint = setNearest[0];
 
-        // Need to do a collision check!
-        auto start = World::Point(randomPoint.x, randomPoint.y);
-        auto end = World::Point(nearestPoint.x, nearestPoint.y);
-        geom::model::segment< World::Point > lineTo(start,end);
-        World::Box bounds(  World::Point(std::min(randomPoint.x, nearestPoint.x), std::min(randomPoint.y, nearestPoint.y)),
-                            World::Point(std::max(randomPoint.x, nearestPoint.x), std::max(randomPoint.y, nearestPoint.y)) );
-
-        geom::index::query( knownWorld,
-                            geom::index::intersects(bounds)
-                                && !geom::index::contains(start)
-                                && !geom::index::contains(end),
-                            std::back_inserter(setCollisions));
-        for(auto&& box : setCollisions)
-        {
-            // We actually know that the box doesn't WHOLLY contain our line,
-            // so we can make some easing assumptions.
-            auto dirVector = bounds.max_corner() - bounds.min_corner();
-            if(lineTo, box))
-                goto RetryRandomPoint;
-        }
+        // gotta make sure the path is obstacle free
+        geom::model::segment< World::Point > lineTo(nearestPoint.first, randomPoint.first);
+        knownWorld.query( geom::index::intersects(lineTo), std::back_inserter(setCollisions));
+        if( !setCollisions.empty() )
+            continue;
 
         setPoints.insert(randomPoint);
         listPoints.push_back(randomPoint);
-        backEdges[randomPoint.tag] = nearestPoint.tag;
+        backEdges[randomPoint.second] = nearestPoint.second;
         indTaggedPoint++;
+        lastPoint = randomPoint;
     }
 
     // Build path from back edges
     std::list< Point > path;
-    while( lastPoint.tag != 0 )
+    int tag = 0;
+    while( (tag = lastPoint.second) != 0 )
     {
-        path.push_front(Point(lastPoint.x, lastPoint.y));
-      if( backEdges.find(lastPoint.tag) == backEdges.end() ) { break; }
-        lastPoint = listPoints[backEdges[lastPoint.tag]];
+        path.push_front(lastPoint.first);
+        lastPoint = listPoints[backEdges[tag]];
     }
-    path.push_front(Point(lastPoint.x, lastPoint.y));
+    path.push_front(lastPoint.first);
     return path;
 }

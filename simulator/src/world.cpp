@@ -19,3 +19,5 @@ std::vector<Box> World::observeWorld(Polygon viewregion) const
     geom::index::query(mMap, geom::index::intersects(viewregion), std::back_inserter(resultSet));
     return resultSet;
 }
+
+World::RTree const & World::sceneTree() const { return mMap; }

@@ -4,13 +4,15 @@ PROJECT(PathControlSimulator)
 
 # Options
 SET(EIGEN3_INCLUDE_DIR "Eigen 3 Include Directory." CACHE STRING "")
+SET(BOOST_1_63_0_INCLUDE_DIR "Boost 1.63.0 Header-Only Include Directory." CACHE STRING "")
 
 # Configure Compiler
 ADD_COMPILE_OPTIONS(-std=c++11)
 
 # Dependencies
-INCLUDE_DIRECTORIES("${EIGEN3_INCLUDE_DIR}" "include/")
-FIND_PACKAGE(Boost 1.54 REQUIRED)
+INCLUDE_DIRECTORIES( "${EIGEN3_INCLUDE_DIR}"
+                     "${BOOST_1_63_0_INCLUDE_DIR}"
+                     "include/" )
 
 # Source Files
 SET(SimSrc  src/diffdrive.cpp
