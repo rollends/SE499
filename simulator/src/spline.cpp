@@ -122,13 +122,6 @@ namespace
 
         return result;
     }
-
-
-    Spline::ApproximateSpline approximate(Matrix<ValueType, 2, Dynamic> poly)
-    {
-        Spline::ApproximateSpline spline;
-        return spline;
-    }
 }
 
 Spline::Spline(Matrix<Spline::ValueType, 2, Dynamic> points)
@@ -146,7 +139,7 @@ Spline::Spline(Matrix<Spline::ValueType, 2, Dynamic> points)
     {
         mDDPoly.row(i) = ::polydiffshift(mDPoly.row(i));
     }
-    //mApproximation = ::approximate(mPoly);
+    approximateSelf();
 }
 
 Spline::Spline()
@@ -263,6 +256,42 @@ Matrix<Spline::ValueType, 2, 1> Spline::operator() (ValueType parameter, uint32_
     default:
         throw InvalidParameterException();
     };
+}
+
+void Spline::approximateSelf()
+{
+    Spline& self = *this;
+
+    const double maxDelta = 2.0 / mPoly.rows();
+    double startLambda = 0;
+    double endLambda = maxDelta;
+
+    mApproximation.clear();
+    do
+    {
+        Spline::Line currentSegment;
+        Matrix<ValueType, 2, 1> start = self(startLambda);
+        Matrix<ValueType, 2, 1> end = self(endLambda);
+        do
+        {
+            Matrix<ValueType, 2, 1> refinedEnd = self(startLambda + (startLambda - endLambda) / 2.0);
+
+            if( (refinedEnd - (start + (end - start) / 2.0)).norm() > (maxDelta / 100) )
+                break;
+
+            endLambda = startLambda + (endLambda - startLambda) / 2.0;
+        } while( true );
+
+        geom::set<0, 0>(currentSegment, start[0]);
+        geom::set<0, 1>(currentSegment, start[1]);
+        geom::set<1, 0>(currentSegment, end[0]);
+        geom::set<1, 1>(currentSegment, end[1]);
+
+        startLambda = endLambda;
+        endLambda = std::min(endLambda + maxDelta, 1.0);
+
+        mApproximation.push_back(currentSegment);
+    } while( startLambda < 1.0 );
 }
 
 Matrix<Spline::ValueType, Dynamic, Spline::CoeffCount> Spline::poly() const { return mPoly; }

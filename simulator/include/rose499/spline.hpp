@@ -18,7 +18,7 @@ struct Spline
 {
     using ValueType = SimulatorTypes::ValueType;
     using Point = geom::model::point<double, 2, geom::cs::cartesian>;
-    using Line = geom::model::linestring< Point >;
+    using Line = geom::model::segment< Point >;
     using ApproximateSpline = std::vector< Line >;
 
     constexpr static int PolyOrder = 5;
@@ -45,6 +45,8 @@ struct Spline
     class IncorrectSplineFormatException : public SplineException { };
 
 private:
+    void approximateSelf();
+
     int mSplineCount;
     Eigen::Matrix<ValueType, Eigen::Dynamic, CoeffCount> mPoly;
     Eigen::Matrix<ValueType, Eigen::Dynamic, CoeffCount> mDPoly;
