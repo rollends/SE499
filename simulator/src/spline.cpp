@@ -37,7 +37,7 @@ namespace
      * Splines a 5th order polynomial through the waypoints that ensures C2
      * conditions are met.
      *
-     * If the system is normally underdetermined so polyfit normally calculates the
+     * The system is normally underdetermined so polyfit normally calculates the
      * right pseduo-inverse and performs a full pivot LU decomposition in order to
      * solve for the coefficients.
      */
@@ -122,6 +122,111 @@ namespace
 
         return result;
     }
+
+    /**
+     * Splines a 5th order polynomial through the waypoints that ensures C2
+     * conditions are met as well as a direction requirement at lambda=0
+     *
+     * The system is normally underdetermined so polyfit normally calculates the
+     * right pseduo-inverse and performs a full pivot LU decomposition in order to
+     * solve for the coefficients.
+     */
+    Matrix<ValueType, Dynamic, Spline::CoeffCount>
+    polyfit(Matrix<ValueType, 2, Dynamic> waypoints, double direction)
+    {
+        constexpr auto CoeffCount = Spline::CoeffCount;
+
+        auto const waypointCount = waypoints.cols();
+        auto const segmentCount = waypointCount - 1;
+
+        // Preallocate the necessary matrices
+        MatrixXT A(8 * (segmentCount-2) + 8 + 4 + 1, 2*CoeffCount*segmentCount);
+        VectorXT b(A.rows(), 1);
+
+        A.setZero();
+        b.setZero();
+
+        PolySpace powers = PolySpace::LinSpaced(0, Spline::PolyOrder);
+        auto row = 0;
+        for(auto indSeg = 0; indSeg < segmentCount; ++indSeg)
+        {
+            auto col = 2*CoeffCount*indSeg;
+
+            ValueType leftLambda = (indSeg * 1.0) / segmentCount;
+            ValueType rightLambda = ((indSeg + 1.0) * 1.0) / segmentCount;
+
+            PolySpace leftTerms = PolySpace::Constant(leftLambda);
+            PolySpace rightTerms = PolySpace::Constant(rightLambda);
+            leftTerms = pow(leftTerms, powers);
+            rightTerms = pow(rightTerms, powers);
+
+            PolySpace dLeftTerms = polydiff(leftTerms);
+            PolySpace ddLeftTerms = polydiff(dLeftTerms);
+
+            PolySpace dRightTerms = polydiff(rightTerms);
+            PolySpace ddRightTerms = polydiff(dRightTerms);
+
+            // Left Equality (C0)
+            A.block<1, CoeffCount>(row + 0, col) = leftTerms;
+            A.block<1, CoeffCount>(row + 1, col + CoeffCount) = leftTerms;
+            b.block<2, 1>(row, 0) = waypoints.block<2, 1>(0, indSeg);
+            row += 2;
+
+            // Right Equality (C0)
+            A.block<1, CoeffCount>(row + 0, col) = rightTerms;
+            A.block<1, CoeffCount>(row + 1, col + CoeffCount) = rightTerms;
+            b.block<2, 1>(row, 0) = waypoints.block<2, 1>(0, indSeg + 1);
+            row += 2;
+
+            if( indSeg == 0 )
+            {
+                double tangent = std::tan(direction);
+                if( std::abs(tangent) < 1 )
+                {
+                    A.bottomRows(1).block<1, CoeffCount>(0, col) = -dLeftTerms * std::tan(direction);
+                    A.bottomRows(1).block<1, CoeffCount>(0, col + CoeffCount) = dLeftTerms;
+                }
+                else
+                {
+                    A.bottomRows(1).block<1, CoeffCount>(0, col) = dLeftTerms;
+                    A.bottomRows(1).block<1, CoeffCount>(0, col + CoeffCount) = -dLeftTerms / std::tan(direction);
+                }
+            }
+
+            if( indSeg < segmentCount - 1 )
+            {
+                // Right Differential Continuity (C1)
+                A.block<1, CoeffCount>(row + 0, col) = dRightTerms;
+                A.block<1, CoeffCount>(row + 0, col + 2 * CoeffCount) = -dRightTerms;
+                A.block<1, CoeffCount>(row + 1, col + CoeffCount) = dRightTerms;
+                A.block<1, CoeffCount>(row + 1, col + 3 * CoeffCount) = -dRightTerms;
+                row += 2;
+
+                // Right Differential Continuity (C2)
+                A.block<1, CoeffCount>(row + 0, col) = ddRightTerms;
+                A.block<1, CoeffCount>(row + 0, col + 2 * CoeffCount) = -ddRightTerms;
+                A.block<1, CoeffCount>(row + 1, col + CoeffCount) = ddRightTerms;
+                A.block<1, CoeffCount>(row + 1, col + 3 * CoeffCount) = -ddRightTerms;
+                row += 2;
+            }
+        }
+
+        MatrixXT c(A.cols(), 1);
+
+        if( A.cols() == A.rows() )          // Exactly determined system (hopefully lol)
+            c = A.fullPivLu().solve(b);
+        else if( A.cols() < A.rows() )      // Use Left Inverse
+            c = (A.transpose() * A).fullPivLu().solve(A.transpose() * b);
+        else                                // Use Right Inverse
+            c = A.transpose() * (A * A.transpose()).fullPivLu().solve(b);
+
+        // Map the resulting coefficient vector into our matrix form of the polynomial
+        // spline!
+        Matrix<ValueType, Dynamic, CoeffCount> result(2 * segmentCount, CoeffCount);
+        result = Map< Matrix<ValueType, Dynamic, CoeffCount, RowMajor> >(c.data(), result.rows(), result.cols());
+
+        return result;
+    }
 }
 
 Spline::Spline(Matrix<Spline::ValueType, 2, Dynamic> points)
@@ -141,6 +246,25 @@ Spline::Spline(Matrix<Spline::ValueType, 2, Dynamic> points)
     }
     approximateSelf();
 }
+
+Spline::Spline(Eigen::Matrix<Spline::ValueType, 2, Eigen::Dynamic> points, double direction)
+  : mSplineCount(points.cols() - 1),
+    mPoly(2 * mSplineCount, CoeffCount),
+    mDPoly(2 * mSplineCount, CoeffCount),
+    mDDPoly(2 * mSplineCount, CoeffCount)
+{
+    mPoly = ::polyfit(points, direction);
+    for( auto i = 0; i < mPoly.rows(); ++i )
+    {
+        mDPoly.row(i) = ::polydiffshift(mPoly.row(i));
+    }
+    for( auto i = 0; i < mPoly.rows(); ++i )
+    {
+        mDDPoly.row(i) = ::polydiffshift(mDPoly.row(i));
+    }
+    approximateSelf();
+}
+
 
 Spline::Spline()
   : mSplineCount(1),

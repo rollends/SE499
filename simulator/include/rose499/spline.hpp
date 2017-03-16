@@ -31,6 +31,7 @@ struct Spline
      */
     Spline();
     Spline(Eigen::Matrix<Spline::ValueType, 2, Eigen::Dynamic> points);
+    Spline(Eigen::Matrix<Spline::ValueType, 2, Eigen::Dynamic> points, double direction);
     Eigen::Matrix<ValueType, 2, 1> operator() (ValueType parameter, uint32_t derivative = 0) const;
     Eigen::Matrix<ValueType, 2, 2> frame(ValueType parameter, uint32_t derivative = 0) const;
     ValueType nearestPoint(Eigen::Matrix<ValueType, 2, 1>, ValueType estimate) const;
