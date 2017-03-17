@@ -3,6 +3,7 @@
 
 #include <array>
 #include <Eigen/Core>
+#include <set>
 #include "rose499/types.hpp"
 #include "rose499/spline.hpp"
 #include "rose499/world.hpp"
@@ -29,17 +30,20 @@ struct DriveController
     typedef DriveSystem::ValueType ValueType;
     typedef DriveSystem::StateType StateType;
 
-    DriveController(DriveSystem &);
+    DriveController(DriveSystem &, Eigen::Matrix<ValueType, 2, 1> goal, ValueType goalRadius);
 
     void operator() (StateType x, StateType& dxdt, double t);
 
-    void path( Spline );
+    void operatingPoint( Spline::ValueType );
+    Spline::ValueType operatingPoint() const;
+    void path( Spline const & );
     Spline const & path() const;
 
     std::ostream& printData(std::ostream&) const;
     std::ostream& printHeaders(std::ostream&) const;
 
-    void updateKnownWorld(std::vector<World::Box> const & obstacles);
+    void updateKnownWorld(std::list<std::pair<World::Box, int>> const & obstacles);
+    void replan();
 
 protected:
     virtual ValueType genSpeedControl(StateType x, double t);
@@ -49,9 +53,14 @@ protected:
     virtual std::ostream& printSpecificData(std::ostream&) const;
 
 private:
+    int mPlanIndex;
     Spline mPath;
+    Spline::ValueType mOperatingLambda;
     DriveSystem& mSystem;
     World::RTree mKnownWorld;
+    std::set<int> mKnownBoxes;
+    Eigen::Matrix<ValueType, 2, 1> mGoal;
+    ValueType mGoalRadius;
 };
 
 namespace std

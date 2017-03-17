@@ -9,6 +9,11 @@ namespace geom = boost::geometry;
 using Point = World::Point;
 using TaggedPoint = std::pair< Point, int >;
 
+namespace
+{
+    std::mt19937_64 engine(0x1EA5ECAD);
+}
+
 std::list< Point > planRRT(     World::RTree knownWorld,
                                 double xMax,
                                 double yMax,
@@ -17,16 +22,15 @@ std::list< Point > planRRT(     World::RTree knownWorld,
                                 Point goal,
                                 double radius )
 {
-    std::mt19937_64 engine;
     std::uniform_real_distribution<> samplerX(0, xMax), samplerY(0, yMax);
 
     TaggedPoint lastPoint(initialPoint, 0);
 
-    geom::index::rtree< TaggedPoint, geom::index::linear<2, 1> > setPoints;
+    geom::index::rtree< TaggedPoint, geom::index::linear<5, 1> > setPoints;
     std::map< uint32_t, uint32_t > backEdges;
     std::vector< TaggedPoint > listPoints;
     std::vector< TaggedPoint > setNearest;
-    std::vector< World::Box > setCollisions;
+    std::vector< std::pair<World::Box, int> > setCollisions;
 
     setPoints.insert( lastPoint );
     listPoints.push_back( lastPoint );
@@ -47,14 +51,45 @@ std::list< Point > planRRT(     World::RTree knownWorld,
 
         // find nearest point in our set
         setPoints.query( geom::index::nearest(randomPoint.first, 10), std::back_inserter(setNearest) );
+
+        // Filter out points that are either too close OR do not fan out from the source point.
+        auto endSetNearest =
+            std::remove_if(
+                setNearest.begin(),
+                setNearest.end(),
+                [direction, eigRandomPoint, &backEdges, &listPoints]( TaggedPoint nearest ) -> bool {
+                    Eigen::Vector2d eigNearest(nearest.first.get<0>(), nearest.first.get<1>());
+                    Eigen::Vector2d eigFrom(std::cos(direction), std::sin(direction));
+                    Eigen::Vector2d vecLeaving = eigRandomPoint - eigNearest;
+                    Eigen::Vector2d vecEntering = eigFrom;
+
+                    if( nearest.second != 0 )
+                    {
+                        auto fromPoint = listPoints[backEdges[nearest.second]];
+                        eigFrom = Eigen::Vector2d(fromPoint.first.get<0>(), fromPoint.first.get<1>());
+                        vecEntering = eigNearest - eigFrom;
+                    }
+
+                    double proj = vecLeaving.dot(vecEntering) / (vecLeaving.norm() * vecEntering.norm());
+
+                    return (vecLeaving.dot(vecEntering) < 0)
+                        || (std::acos(proj) > std::atan2(0.75, 1))
+                        ;//|| (vecLeaving.norm() < 1);
+                }
+            );
+        setNearest.erase(endSetNearest, setNearest.end());
+
+        if( setNearest.empty() )
+            continue;
+
         std::sort(  setNearest.begin(),
                     setNearest.end(),
-                    [eigRandomPoint]( TaggedPoint a, TaggedPoint b){
-                        return  (Eigen::Vector2d(a.first.get<0>(), a.first.get<1>()) - eigRandomPoint).norm()
+                    [eigRandomPoint](TaggedPoint a, TaggedPoint b) -> bool {
+                        return  (Eigen::Vector2d(a.first.get<0>(), a.first.get<1>()) - eigRandomPoint).squaredNorm()
                                 <
-                                (Eigen::Vector2d(b.first.get<0>(), b.first.get<1>()) - eigRandomPoint).norm();
+                                (Eigen::Vector2d(b.first.get<0>(), b.first.get<1>()) - eigRandomPoint).squaredNorm();
                     } );
-        TaggedPoint nearestPoint = setNearest[0];
+        TaggedPoint nearestPoint = setNearest.front();
 
         // gotta make sure the path is obstacle free
         geom::model::segment< World::Point > lineTo(nearestPoint.first, randomPoint.first);

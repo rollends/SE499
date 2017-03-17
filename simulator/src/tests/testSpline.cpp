@@ -29,7 +29,7 @@ SCENARIO( "waypoints can be splined with a 5th order C^2 polynomial", "[spline]"
 
         WHEN( "splined via contructor with a direction constraint" )
         {
-            Spline spline(waypoints, std::atan2(1, 0));
+            Spline spline(waypoints, std::atan2(0, 1));
             THEN( "waypoints should be on the spline" )
             {
                 for(auto i = 0; i < waypoints.cols(); ++i)
@@ -43,7 +43,7 @@ SCENARIO( "waypoints can be splined with a 5th order C^2 polynomial", "[spline]"
             THEN( "derivative of spline at initial point is what was requested" )
             {
                 auto slope = spline(0, 1);
-                REQUIRE( std::atan2(slope[1], slope[0]) == Approx(std::atan2(1, 0)) );
+                REQUIRE( std::atan2(slope[1], slope[0]) == Approx(std::atan2(0, 1)) );
             }
         }
     }

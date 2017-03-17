@@ -326,7 +326,7 @@ Spline::ValueType Spline::nearestPoint(Matrix<ValueType, 2, 1> point, ValueType 
     do
     {
         ValueType estimate = lambdaStar - alpha * gradient(lambdaStar);
-        if( error(estimate) <= error(lambdaStar) )
+        if( error(estimate) < error(lambdaStar) )
         {
             lambdaStar = estimate;
             alpha *= 1.2;
@@ -335,7 +335,7 @@ Spline::ValueType Spline::nearestPoint(Matrix<ValueType, 2, 1> point, ValueType 
             alpha *= 0.8;
     } while( std::abs(alpha * gradient(lambdaStar)) > 1e-12 );
 
-    return lambdaStar;
+    return std::max(std::min(lambdaStar, 1.0), 0.0);
 }
 
 int Spline::splineIndexUsed(ValueType parameter) const
@@ -386,7 +386,7 @@ void Spline::approximateSelf()
 {
     Spline& self = *this;
 
-    const double maxDelta = 2.0 / mPoly.rows();
+    const double maxDelta = 1.0 / (2.0 * mSplineCount);
     double startLambda = 0;
     double endLambda = maxDelta;
 
@@ -396,14 +396,16 @@ void Spline::approximateSelf()
         Spline::Line currentSegment;
         Matrix<ValueType, 2, 1> start = self(startLambda);
         Matrix<ValueType, 2, 1> end = self(endLambda);
+
         do
         {
-            Matrix<ValueType, 2, 1> refinedEnd = self(startLambda + (startLambda - endLambda) / 2.0);
+            Matrix<ValueType, 2, 1> midpoint = self(startLambda + (endLambda - startLambda) / 2.0);
 
-            if( (refinedEnd - (start + (end - start) / 2.0)).norm() > (maxDelta / 100) )
+            if( (midpoint - (start / 2.0 + end / 2.0)).norm() <= (1e-2) )
                 break;
 
-            endLambda = startLambda + (endLambda - startLambda) / 2.0;
+            endLambda = startLambda / 2.0 + endLambda / 2.0;
+            end = self(endLambda);
         } while( true );
 
         geom::set<0, 0>(currentSegment, start[0]);

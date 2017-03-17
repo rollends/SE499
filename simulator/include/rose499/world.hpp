@@ -11,16 +11,19 @@ namespace geom = boost::geometry;
 
 struct World
 {
+    static constexpr double XMax = 100.0;
+    static constexpr double YMax = 100.0;
+
     using Point = geom::model::point<double, 2, geom::cs::cartesian>;
     using Polygon = geom::model::polygon<Point>;
     using Box = geom::model::box<Point>;
-    using RTree = geom::index::rtree< Box, geom::index::linear<3, 1> >;
+    using RTree = geom::index::rtree< std::pair<Box, int>, geom::index::linear<3, 1> >;
 
     /** Construct empty world **/
     World() = default;
 
-    void addBoxObstacle(double x, double y, double w, double h);
-    std::vector<Box> observeWorld(Polygon viewregion) const;
+    void addBoxObstacle(int id, double x, double y, double w, double h);
+    std::list< std::pair<Box, int> > observeWorld(Polygon viewregion) const;
     RTree const & sceneTree() const;
 
 private:

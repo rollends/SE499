@@ -35,8 +35,8 @@ DriveController::ValueType SerretFrenetController::genTurnControl(DriveControlle
           0, 1, 0;
 
     // Nearest Point
-    double lambda = path().nearestPoint(h, mOperatingLambda);
-    mOperatingLambda = lambda;
+    double lambda = path().nearestPoint(h, operatingPoint());
+    operatingPoint(lambda);
 
     // Formulate Linearized State
     Matrix2T xi;
@@ -56,7 +56,7 @@ DriveController::ValueType SerretFrenetController::genTurnControl(DriveControlle
     auto lff = (de2dx * f).dot( dh * f );
     auto lgf = (   e2    ).dot( dh * df * g );
     auto ulin = -mXi(0) - sqrt(3) * mXi(1);
-    auto ucontrol = (5 * ulin - lff) / lgf;
+    auto ucontrol = (10 * ulin - lff) / lgf;
 
     assert(!isnan(lff) && !isinf(lff));
     assert(!isnan(lgf) && !isinf(lgf));
@@ -66,8 +66,8 @@ DriveController::ValueType SerretFrenetController::genTurnControl(DriveControlle
     return ucontrol;
 }
 
-SerretFrenetController::SerretFrenetController(DriveSystem& sys)
-  : mOperatingLambda(0), DriveController(sys) { }
+SerretFrenetController::SerretFrenetController(DriveSystem& sys, Eigen::Matrix<ValueType, 2, 1> goal, ValueType goalRadius)
+  : DriveController(sys, goal, goalRadius) { }
 
 
 std::ostream& SerretFrenetController::printSpecificHeaders(std::ostream& s) const
@@ -88,5 +88,4 @@ std::ostream& SerretFrenetController::printSpecificData(std::ostream& s) const
              << "," << state[1];
 }
 
-Spline::ValueType SerretFrenetController::operatingPoint() const { return mOperatingLambda; }
 Matrix<DriveController::ValueType, 2, 1> const & SerretFrenetController::linearizedState() const { return mXi; }

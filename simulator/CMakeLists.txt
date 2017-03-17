@@ -7,7 +7,7 @@ SET(EIGEN3_INCLUDE_DIR "Eigen 3 Include Directory." CACHE STRING "")
 SET(BOOST_1_63_0_INCLUDE_DIR "Boost 1.63.0 Header-Only Include Directory." CACHE STRING "")
 
 # Configure Compiler
-ADD_COMPILE_OPTIONS(-std=c++11)
+ADD_COMPILE_OPTIONS(-std=c++11 -O3)
 
 # Dependencies
 INCLUDE_DIRECTORIES( "${EIGEN3_INCLUDE_DIR}"

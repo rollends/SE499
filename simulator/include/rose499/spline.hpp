@@ -30,6 +30,7 @@ struct Spline
      * 5th order polynomial.
      */
     Spline();
+    Spline(Spline const &) = default;
     Spline(Eigen::Matrix<Spline::ValueType, 2, Eigen::Dynamic> points);
     Spline(Eigen::Matrix<Spline::ValueType, 2, Eigen::Dynamic> points, double direction);
     Eigen::Matrix<ValueType, 2, 1> operator() (ValueType parameter, uint32_t derivative = 0) const;

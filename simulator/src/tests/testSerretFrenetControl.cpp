@@ -26,7 +26,7 @@ SCENARIO( "serret frenet controller applied to polynomial path", "[serretfrenet]
     GIVEN( "constructed serret frenet controller" )
     {
         DriveSystem robot;
-        SerretFrenetController sfcontrol(robot);
+        SerretFrenetController sfcontrol(robot, Eigen::Vector2d(10, 10), 1);
         sfcontrol.path(spline);
 
         WHEN( "simulated with initial condition on the path" )

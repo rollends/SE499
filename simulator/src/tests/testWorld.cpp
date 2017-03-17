@@ -11,7 +11,7 @@ SCENARIO( "a world with boxes", "[world]" )
     GIVEN( "a world with a single box" )
     {
         World world;
-        world.addBoxObstacle(1, 1, 10, 10);
+        world.addBoxObstacle(0, 1, 1, 10, 10);
 
         WHEN( "observing the world while facing the box" )
         {
@@ -25,6 +25,7 @@ SCENARIO( "a world with boxes", "[world]" )
             THEN( "the box is observed" )
             {
                 REQUIRE( !obstacles.empty() );
+                REQUIRE( obstacles.front().second == 0 );
             }
         }
 
@@ -47,9 +48,10 @@ SCENARIO( "a world with boxes", "[world]" )
     GIVEN( "a world with many boxes" )
     {
         World world;
-        for(int i = 0; i < 10; i++)
-            world.addBoxObstacle(1 + 12 * i, 5, 5, 5);
-        world.addBoxObstacle(0, 20, 95, 10);
+        int i = 0;
+        for(i = 0; i < 10; i++)
+            world.addBoxObstacle(i, 1 + 12 * i, 5, 5, 5);
+        world.addBoxObstacle(i, 0, 20, 95, 10);
 
         WHEN( "planning a path from [0,0], to [95,95]" )
         {
@@ -75,7 +77,7 @@ SCENARIO( "a world with boxes", "[world]" )
 
                 THEN( "the (segmented) path doesn't intersect any of the boxes in our world" )
                 {
-                    std::vector< World::Box > setCollisions;
+                    std::vector< std::pair<World::Box, int> > setCollisions;
                     auto start = std::begin(path);
                     auto end = std::next(start);
                     do {

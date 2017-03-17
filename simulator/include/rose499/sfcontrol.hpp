@@ -7,10 +7,9 @@
 
 struct SerretFrenetController : public DriveController
 {
-    SerretFrenetController(DriveSystem&);
+    SerretFrenetController(DriveSystem&, Eigen::Matrix<ValueType, 2, 1> goal, ValueType goalRadius);
     virtual DriveController::ValueType genTurnControl(DriveController::StateType x, double t) override;
 
-    Spline::ValueType operatingPoint() const;
     Eigen::Matrix<DriveController::ValueType, 2, 1> const & linearizedState() const;
 
 protected:
@@ -18,7 +17,6 @@ protected:
     std::ostream& printSpecificData(std::ostream& s) const override;
 
 private:
-    Spline::ValueType mOperatingLambda;
     Eigen::Matrix<DriveController::ValueType, 2, 1> mXi;
 };
 
