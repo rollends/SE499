@@ -17,11 +17,19 @@ namespace
     using VectorXT = SimulatorTypes::VectorXT;
     using PolySpace = Array<ValueType, 1, Spline::CoeffCount>;
 
-    PolySpace polydiff(PolySpace poly)
+    PolySpace polydiff_power(PolySpace poly, int order)
     {
+        PolySpace prevPoly = poly;
         PolySpace dpoly = PolySpace::Constant(0);
-        dpoly.tail(Spline::CoeffCount - 1) = poly.head(Spline::CoeffCount - 1);
-        dpoly *= PolySpace::LinSpaced(0, Spline::PolyOrder);
+        PolySpace powerCoeff = PolySpace::Constant(1);
+        for(auto i = 0; i < order; i++)
+        {
+            Array<ValueType, 1, Dynamic> power(1, Spline::CoeffCount - i);
+            power.setLinSpaced(0, Spline::PolyOrder - i);
+            powerCoeff.tail(Spline::CoeffCount - i) = powerCoeff.tail(Spline::CoeffCount - i) * power;
+        }
+        dpoly.tail(Spline::CoeffCount - order) = poly.head(Spline::CoeffCount - order);
+        dpoly = dpoly * powerCoeff;
         return dpoly;
     }
 
@@ -50,7 +58,7 @@ namespace
         auto const segmentCount = waypointCount - 1;
 
         // Preallocate the necessary matrices
-        MatrixXT A(8 * (segmentCount-2) + 8 + 4, 2*CoeffCount*segmentCount);
+        MatrixXT A(4*(segmentCount-1) + 4*(segmentCount), 2*CoeffCount*segmentCount);
         VectorXT b(A.rows(), 1);
 
         A.setZero();
@@ -60,7 +68,7 @@ namespace
         auto row = 0;
         for(auto indSeg = 0; indSeg < segmentCount; ++indSeg)
         {
-            auto col = 2*CoeffCount*indSeg;
+            auto col = 2 * CoeffCount * indSeg;
 
             ValueType leftLambda = (indSeg * 1.0) / segmentCount;
             ValueType rightLambda = ((indSeg + 1.0) * 1.0) / segmentCount;
@@ -70,11 +78,11 @@ namespace
             leftTerms = pow(leftTerms, powers);
             rightTerms = pow(rightTerms, powers);
 
-            PolySpace dLeftTerms = polydiff(leftTerms);
-            PolySpace ddLeftTerms = polydiff(dLeftTerms);
+            PolySpace dLeftTerms = polydiff_power(leftTerms, 1);
+            PolySpace ddLeftTerms = polydiff_power(leftTerms, 2);
 
-            PolySpace dRightTerms = polydiff(rightTerms);
-            PolySpace ddRightTerms = polydiff(dRightTerms);
+            PolySpace dRightTerms = polydiff_power(rightTerms, 1);
+            PolySpace ddRightTerms = polydiff_power(rightTerms, 2);
 
             // Left Equality (C0)
             A.block<1, CoeffCount>(row + 0, col) = leftTerms;
@@ -108,12 +116,8 @@ namespace
 
         MatrixXT c(A.cols(), 1);
 
-        if( A.cols() == A.rows() )          // Exactly determined system (hopefully lol)
-            c = A.fullPivLu().solve(b);
-        else if( A.cols() < A.rows() )      // Use Left Inverse
-            c = (A.transpose() * A).fullPivLu().solve(A.transpose() * b);
-        else                                // Use Right Inverse
-            c = A.transpose() * (A * A.transpose()).fullPivLu().solve(b);
+        // Moore-Penrose (Right) Pseudo-Inverse
+        c = A.transpose() * (A * A.transpose()).fullPivLu().solve(b);
 
         // Map the resulting coefficient vector into our matrix form of the polynomial
         // spline!
@@ -140,7 +144,8 @@ namespace
         auto const segmentCount = waypointCount - 1;
 
         // Preallocate the necessary matrices
-        MatrixXT A(8 * (segmentCount-2) + 8 + 4 + 1, 2*CoeffCount*segmentCount);
+        constexpr size_t DirectionConstraintCount = 2;
+        MatrixXT A(8 * (segmentCount-2) + 8 + 4 + DirectionConstraintCount, 2*CoeffCount*segmentCount);
         VectorXT b(A.rows(), 1);
 
         A.setZero();
@@ -160,11 +165,11 @@ namespace
             leftTerms = pow(leftTerms, powers);
             rightTerms = pow(rightTerms, powers);
 
-            PolySpace dLeftTerms = polydiff(leftTerms);
-            PolySpace ddLeftTerms = polydiff(dLeftTerms);
+            PolySpace dLeftTerms = polydiff_power(leftTerms, 1);
+            PolySpace ddLeftTerms = polydiff_power(leftTerms, 2);
 
-            PolySpace dRightTerms = polydiff(rightTerms);
-            PolySpace ddRightTerms = polydiff(dRightTerms);
+            PolySpace dRightTerms = polydiff_power(rightTerms, 1);
+            PolySpace ddRightTerms = polydiff_power(rightTerms, 2);
 
             // Left Equality (C0)
             A.block<1, CoeffCount>(row + 0, col) = leftTerms;
@@ -180,17 +185,14 @@ namespace
 
             if( indSeg == 0 )
             {
-                double tangent = std::tan(direction);
-                if( std::abs(tangent) < 1 )
-                {
-                    A.bottomRows(1).block<1, CoeffCount>(0, col) = -dLeftTerms * std::tan(direction);
-                    A.bottomRows(1).block<1, CoeffCount>(0, col + CoeffCount) = dLeftTerms;
-                }
-                else
-                {
-                    A.bottomRows(1).block<1, CoeffCount>(0, col) = dLeftTerms;
-                    A.bottomRows(1).block<1, CoeffCount>(0, col + CoeffCount) = -dLeftTerms / std::tan(direction);
-                }
+                A.bottomRows(DirectionConstraintCount).block<1, CoeffCount>(0, col) = dLeftTerms;
+                A.bottomRows(DirectionConstraintCount).block<1, CoeffCount>(1, col + CoeffCount) = dLeftTerms;
+
+                Matrix<ValueType, 2, 1> vec;
+                vec(0) = std::cos(direction);
+                vec(1) = std::sin(direction);
+
+                b.tail(DirectionConstraintCount) = vec;
             }
 
             if( indSeg < segmentCount - 1 )
@@ -213,12 +215,8 @@ namespace
 
         MatrixXT c(A.cols(), 1);
 
-        if( A.cols() == A.rows() )          // Exactly determined system (hopefully lol)
-            c = A.fullPivLu().solve(b);
-        else if( A.cols() < A.rows() )      // Use Left Inverse
-            c = (A.transpose() * A).fullPivLu().solve(A.transpose() * b);
-        else                                // Use Right Inverse
-            c = A.transpose() * (A * A.transpose()).fullPivLu().solve(b);
+        // Moore-Penrose (Right) Pseudo-Inverse
+        c = A.transpose() * (A * A.transpose()).fullPivLu().solve(b);
 
         // Map the resulting coefficient vector into our matrix form of the polynomial
         // spline!
@@ -320,22 +318,29 @@ Spline::ValueType Spline::nearestPoint(Matrix<ValueType, 2, 1> point, ValueType 
             return -2*verr.dot(this->operator()(l, 1));
         };
 
-    double alpha = 1.0 / (10 * mSplineCount);
-    alpha = std::min(alpha, alpha / speed(lambdaStar));
+    double lambda = lambdaStar;
+    double alpha = 1.0;
+    alpha = std::min(alpha, alpha / speed(lambda));
 
     do
     {
-        ValueType estimate = lambdaStar - alpha * gradient(lambdaStar);
-        if( error(estimate) < error(lambdaStar) )
+        ValueType estimate = lambda - alpha * gradient(lambda);
+        if( error(estimate) < error(lambda) )
         {
-            lambdaStar = estimate;
+            lambda = estimate;
             alpha *= 1.2;
         }
         else
             alpha *= 0.8;
-    } while( std::abs(alpha * gradient(lambdaStar)) > 1e-12 );
+    } while( std::abs(alpha * gradient(lambda)) > 1e-12 );
 
-    return std::max(std::min(lambdaStar, 1.0), 0.0);
+    if( lambda < 0 )
+    {
+        // perturb initial condition.
+        //return nearestPoint(point, lambdaStar + 1.0 / (2*mSplineCount));
+    }
+
+    return std::max(std::min(lambda, 1.0), 0.0);
 }
 
 int Spline::splineIndexUsed(ValueType parameter) const
@@ -397,16 +402,26 @@ void Spline::approximateSelf()
         Matrix<ValueType, 2, 1> start = self(startLambda);
         Matrix<ValueType, 2, 1> end = self(endLambda);
 
+        double normedIntegral = 0.0;
         do
         {
-            Matrix<ValueType, 2, 1> midpoint = self(startLambda + (endLambda - startLambda) / 2.0);
-
-            if( (midpoint - (start / 2.0 + end / 2.0)).norm() <= (1e-2) )
-                break;
-
+            normedIntegral = 0.0;
             endLambda = startLambda / 2.0 + endLambda / 2.0;
             end = self(endLambda);
-        } while( true );
+
+            Matrix<ValueType, 2, 1> midpoint = self(startLambda / 2.0 + endLambda / 2.0);
+
+            // Integrate numerically
+            for(int i = 0; (i < 1000) && (normedIntegral <= 0.1); ++i)
+            {
+                Matrix<ValueType, 3, 1> dError = Matrix<ValueType, 3, 1>::Constant(0);
+                Matrix<ValueType, 3, 1> dLine = Matrix<ValueType, 3, 1>::Constant(0);
+                dError.head(2) = self(startLambda + i * (endLambda - startLambda) / 1000)
+                               - (start + i * (end - start) / 1000);
+                dLine.head(2)  = (end - start) / 1000;
+                normedIntegral += dError.cross(dLine).norm();
+            }
+        } while( normedIntegral > 0.1 );
 
         geom::set<0, 0>(currentSegment, start[0]);
         geom::set<0, 1>(currentSegment, start[1]);
@@ -421,4 +436,6 @@ void Spline::approximateSelf()
 }
 
 Matrix<Spline::ValueType, Dynamic, Spline::CoeffCount> Spline::poly() const { return mPoly; }
+Matrix<Spline::ValueType, Dynamic, Spline::CoeffCount> Spline::dpoly() const{ return mDPoly; }
+Matrix<Spline::ValueType, Dynamic, Spline::CoeffCount> Spline::ddpoly() const{ return mDDPoly; }
 Spline::ApproximateSpline const & Spline::approximation() const { return mApproximation; }

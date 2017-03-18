@@ -21,70 +21,55 @@ int main(int argc, char* argv[])
 
     World world;
     DriveSystem robot;
-    SerretFrenetController sfcontrol(robot, Eigen::Vector2d(95, 95), 3);
+
+    const Eigen::Vector2d goal(95, 95);
+    const double goalRadius = 3;
+
+    SerretFrenetController sfcontrol(robot,goal,goalRadius);
     sfcontrol.printHeaders(std::cout) << std::endl;
 
     // Create World
     int i = 0;
     for(i = 0; i < 6; i++)
-        world.addBoxObstacle(i, 7 + 12 * i, 5, 5, 20);
-    world.addBoxObstacle(i++, 0, 50, 80, 10);
-    world.addBoxObstacle(i++, 90, 50, 10, 10);
+        world.addBoxObstacle(i, 10 + 10 * i, 5, 5, 20);
+    world.addBoxObstacle(++i, 0, 50, 80, 10);
+    world.addBoxObstacle(++i, 90, 50, 10, 10);
 
     // Plan every 200ms
     constexpr double PlanTime = 0.050;
     double planningClock = 0.0;
 
     // Prime Planning Algo
-    World::Polygon viewFrustum;
-    geom::append(viewFrustum.outer(), World::Point(x[0], x[1]));
-    {
-        Eigen::Vector2d dir(std::cos(x[3]), std::sin(x[3]));
-        Rotation2D<double> right(std::atan2(-1, 1));
-        Rotation2D<double> left(std::atan2(1, 1));
-        auto viewRight = right * dir;
-        auto viewLeft = left * dir;
-
-        geom::append(viewFrustum.outer(), World::Point(x[0] + 7 * viewRight[0], x[1] + 7 * viewRight[1]));
-        geom::append(viewFrustum.outer(), World::Point(x[0] + 7 * viewLeft[0], x[1] + 7 * viewLeft[1]));
-    }
-    geom::append(viewFrustum.outer(), World::Point(x[0], x[1]));
-    sfcontrol.updateKnownWorld(world.observeWorld(viewFrustum));
-
+    auto hasDiverged = [&sfcontrol](){ return std::abs(sfcontrol.linearizedState()[1]) >= 0.7; };
+    sfcontrol.updateKnownWorld(world.observeWorld(robot.viewCone()));
     do
     {
-
         // If we fail, retry with smaller step size (hopefully it converges, eh?)
         if(odeint::fail == ode45.try_step(std::reference_wrapper<DriveController>(sfcontrol), x, T, dt))
             continue;
 
-        dt = std::min( dt, 0.01 );
+        // Update current state of the robot.
+        robot.state(Map<Matrix<DriveSystem::ValueType, 3, 1>>(x.data()));
+        robot.time(T);
+
+        dt = std::min( dt, 0.001 );
 
         // If we pass store the system state to file.
         std::cout << sfcontrol << std::endl;
 
-        if((planningClock += dt) >= PlanTime)
+        if(
+            (planningClock += dt) >= PlanTime
+         || (sfcontrol.operatingPoint() >= 1.0)
+         || hasDiverged()
+          )
         {
             planningClock = 0.0;
 
-            // Observe the world, and make sure there are no changes before replanning.
-            World::Polygon viewFrustum;
-            geom::append(viewFrustum.outer(), World::Point(x[0], x[1]));
-            {
-                Eigen::Vector2d dir(std::cos(x[3]), std::sin(x[3]));
-                Rotation2D<double> right(std::atan2(-1, 1));
-                Rotation2D<double> left(std::atan2(1, 1));
-                auto viewRight = right * dir;
-                auto viewLeft = left * dir;
-
-                geom::append(viewFrustum.outer(), World::Point(x[0] + 10 * viewRight[0], x[1] + 10 * viewRight[1]));
-                geom::append(viewFrustum.outer(), World::Point(x[0] + 10 * viewLeft[0], x[1] + 10 * viewLeft[1]));
-            }
-            geom::append(viewFrustum.outer(), World::Point(x[0], x[1]));
-            auto observedWorld = world.observeWorld(viewFrustum);
-            sfcontrol.updateKnownWorld(observedWorld);
+            // Observe the world and update our 'known' (Estimated) world state
+            auto observedWorld = world.observeWorld(robot.viewCone());
+            sfcontrol.updateKnownWorld(observedWorld, hasDiverged());
         }
-    } while( (T < Tfinal) || (sfcontrol.operatingPoint() < 1) );
+    } while( (sfcontrol.goal() - Eigen::Vector2d(x[0], x[1])).norm() > goalRadius );
 
     return 0;
 }

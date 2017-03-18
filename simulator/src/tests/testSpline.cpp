@@ -67,6 +67,7 @@ SCENARIO( "waypoints can be splined with a 5th order C^2 polynomial", "[spline]"
                 {
                     auto splinePoint = spline((i * 1.0) / SegmentCount);
                     auto waypoint = waypoints.col(i);
+                    CAPTURE( spline.poly() );
                     REQUIRE((splinePoint - waypoint).isZero() );
                 }
             }
@@ -77,6 +78,8 @@ SCENARIO( "waypoints can be splined with a 5th order C^2 polynomial", "[spline]"
                 {
                     auto derivativeFromLeft = spline((i * 1.0) / SegmentCount - 1e-12, 1);
                     auto derivativeFromRight = spline((i * 1.0) / SegmentCount + 1e-12, 1);
+                    CAPTURE( spline.dpoly() );
+                    CAPTURE( i );
                     REQUIRE( (derivativeFromLeft - derivativeFromRight).norm() == Approx(0.0).margin(1e-12) );
                 }
             }
@@ -87,6 +90,8 @@ SCENARIO( "waypoints can be splined with a 5th order C^2 polynomial", "[spline]"
                 {
                     auto derivativeFromLeft = spline((i * 1.0) / SegmentCount - 1e-12, 2);
                     auto derivativeFromRight = spline((i * 1.0) / SegmentCount + 1e-12, 2);
+                    CAPTURE( spline.ddpoly() );
+                    CAPTURE( i );
                     REQUIRE( (derivativeFromLeft - derivativeFromRight).norm() == Approx(0.0).margin(1e-12) );
                 }
             }

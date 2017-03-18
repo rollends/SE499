@@ -1,5 +1,5 @@
 #include <cmath>
-
+#include <Eigen/Geometry>
 #include "rose499/diffdrive.hpp"
 
 using namespace Eigen;
@@ -10,13 +10,11 @@ void DriveSystem::step( StateType x,
                         ValueType turn,
                         ValueType speed )
 {
-    mTime = t;
-    mState = Map<Matrix<ValueType, 3, 1>>(x.data());
-    mFlow << speed * std::cos(mState(2)),
-             speed * std::sin(mState(2)),
-             turn;
-    Map<Matrix<ValueType, 3, 1>>(dxdt.data()) = mFlow;
+    Map<Matrix<ValueType, 3, 1>>(dxdt.data()) << speed * std::cos(x[2]),
+                                                 speed * std::sin(x[2]),
+                                                 turn;
 }
+
 
 DriveController::DriveController(   DriveSystem & driver,
                                     Matrix<ValueType, 2, 1> goal,
@@ -34,6 +32,27 @@ DriveController::DriveController(   DriveSystem & driver,
 Matrix<DriveSystem::ValueType, 3, 1> const & DriveSystem::state() const { return mState; }
 Matrix<DriveSystem::ValueType, 3, 1> const & DriveSystem::flow() const { return mFlow; }
 double DriveSystem::time() const { return mTime; }
+void DriveSystem::state(Eigen::Matrix<ValueType, 3, 1> x) { mState = x; }
+void DriveSystem::flow(Eigen::Matrix<ValueType, 3, 1> f) { mFlow = f; }
+void DriveSystem::time(double t) { mTime = t; }
+
+World::Polygon DriveSystem::viewCone() const
+{
+    World::Polygon viewFrustum;
+    geom::append(viewFrustum.outer(), World::Point(mState[0], mState[1]));
+    {
+        Vector2d dir(std::cos(mState[2]), std::sin(mState[2]));
+        Rotation2D<double> right(std::atan2(-1, 1));
+        Rotation2D<double> left(std::atan2(1, 1));
+        Vector2d viewRight = right * dir;
+        Vector2d viewLeft = left * dir;
+
+        geom::append(viewFrustum.outer(), World::Point(mState[0] + 10 * viewLeft[0], mState[1] + 10 * viewLeft[1]));
+        geom::append(viewFrustum.outer(), World::Point(mState[0] + 10 * viewRight[0], mState[1] + 10 * viewRight[1]));
+    }
+    geom::append(viewFrustum.outer(), World::Point(mState[0], mState[1]));
+    return viewFrustum;
+}
 
 void DriveController::operator() (StateType x, StateType& dxdt, double t)
 {
@@ -69,7 +88,7 @@ DriveController::ValueType DriveController::genSpeedControl(StateType, double)
     return 1;
 }
 
-void DriveController::updateKnownWorld(std::list< std::pair<World::Box, int> > const & obstacles)
+void DriveController::updateKnownWorld(std::list< std::pair<World::Box, int> > const & obstacles, bool forceReplan)
 {
     auto newList = obstacles;
     auto newEnd = std::remove_if(   newList.begin(),
@@ -85,7 +104,7 @@ void DriveController::updateKnownWorld(std::list< std::pair<World::Box, int> > c
     for(auto&& pair : newList)
         mKnownBoxes.insert(pair.second);
 
-    if( !newList.empty() )
+    if( !newList.empty() || forceReplan )
         replan();
 }
 
@@ -148,6 +167,8 @@ Spline const & DriveController::path() const { return mPath; }
 
 void DriveController::operatingPoint( Spline::ValueType v ) { mOperatingLambda = v; }
 Spline::ValueType DriveController::operatingPoint() const { return mOperatingLambda; }
+
+Matrix<DriveController::ValueType, 2, 1> const & DriveController::goal() const { return mGoal; }
 
 std::ostream& std::operator << (std::ostream& s, DriveController const & c)
 {

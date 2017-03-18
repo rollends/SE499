@@ -18,6 +18,11 @@ struct DriveSystem
     double time() const;
     Eigen::Matrix<ValueType, 3, 1> const & state() const;
     Eigen::Matrix<ValueType, 3, 1> const & flow() const;
+    void state(Eigen::Matrix<ValueType, 3, 1> x);
+    void flow(Eigen::Matrix<ValueType, 3, 1> f);
+    void time(double t);
+
+    World::Polygon viewCone() const;
 
 private:
     double mTime;
@@ -38,11 +43,12 @@ struct DriveController
     Spline::ValueType operatingPoint() const;
     void path( Spline const & );
     Spline const & path() const;
+    Eigen::Matrix<ValueType, 2, 1> const & goal() const;
 
     std::ostream& printData(std::ostream&) const;
     std::ostream& printHeaders(std::ostream&) const;
 
-    void updateKnownWorld(std::list<std::pair<World::Box, int>> const & obstacles);
+    void updateKnownWorld(std::list<std::pair<World::Box, int>> const & obstacles, bool forceReplan = false);
     void replan();
 
 protected:
