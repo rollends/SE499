@@ -4,16 +4,17 @@
 #include "test/catch.hpp"
 
 using namespace Eigen;
+using namespace SimulatorTypes;
 
 SCENARIO( "serret frenet controller applied to polynomial path", "[serretfrenet]" )
 {
     namespace odeint = boost::numeric::odeint;
-    constexpr double Tfinal = 40.0;
-    double T = 0.0;
-    double dt = 0.001;
+    constexpr ValueType Tfinal = 40.0;
+    ValueType T = 0.0;
+    ValueType dt = 0.001;
 
     // Initial Condition
-    auto ode45 = odeint::make_controlled( 1.0e-12 , 1.0e-12 , odeint::runge_kutta_fehlberg78<DriveSystem::StateType>() );
+    auto ode45 = odeint::make_controlled( 1.0e-12 , 1.0e-12 , odeint::runge_kutta_fehlberg78<DriveSystem::StateType, ValueType>() );
 
     // Generate a spline
     Matrix<Spline::ValueType, 2, 2> waypoints;
@@ -26,7 +27,7 @@ SCENARIO( "serret frenet controller applied to polynomial path", "[serretfrenet]
     GIVEN( "constructed serret frenet controller" )
     {
         DriveSystem robot;
-        SerretFrenetController sfcontrol(robot, Eigen::Vector2d(10, 10), 1);
+        SerretFrenetController sfcontrol(robot, Vector2T(10, 10), 1);
         sfcontrol.path(spline);
 
         WHEN( "simulated with initial condition on the path" )
@@ -38,7 +39,7 @@ SCENARIO( "serret frenet controller applied to polynomial path", "[serretfrenet]
                 if(odeint::fail == ode45.try_step(std::reference_wrapper<DriveController>(sfcontrol), x, T, dt))
                     continue;
 
-                dt = std::min( dt, 0.05 );
+                dt = std::min( dt, static_cast<ValueType>(0.05) );
 
                 // Check if we converged to the path tangentially!
                 if( sfcontrol.linearizedState().norm() == Approx(0).margin(1e-6) )
@@ -55,7 +56,7 @@ SCENARIO( "serret frenet controller applied to polynomial path", "[serretfrenet]
                     if(odeint::fail == ode45.try_step(std::reference_wrapper<DriveController>(sfcontrol), x, T, dt))
                         continue;
 
-                    dt = std::min( dt, 0.05 );
+                    dt = std::min( dt, static_cast<ValueType>(0.05) );
 
                     REQUIRE( sfcontrol.linearizedState().norm() == Approx(0).margin(1e-6) );
                 }

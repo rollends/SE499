@@ -70,6 +70,11 @@ SerretFrenetController::SerretFrenetController(DriveSystem& sys, Eigen::Matrix<V
   : DriveController(sys, goal, goalRadius) { }
 
 
+bool SerretFrenetController::hasDiverged() const
+{
+    return std::abs(linearizedState()[1]) >= 0.7;
+}
+
 std::ostream& SerretFrenetController::printSpecificHeaders(std::ostream& s) const
 {
     return s << ", lambdaStar, spline_ind, sigma_1, sigma_2, xi_1, xi_2";

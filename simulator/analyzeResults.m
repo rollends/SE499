@@ -1,5 +1,5 @@
 %% Load file (choose file name)
-T = readtable('results_rrt_6.csv');
+T = readtable('results_rrt_sylvester.csv');
 
 splineCount = max(T.spline_ind);
 rrtCount = max(T.plan_ind);

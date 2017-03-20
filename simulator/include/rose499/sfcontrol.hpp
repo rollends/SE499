@@ -11,6 +11,7 @@ struct SerretFrenetController : public DriveController
     virtual DriveController::ValueType genTurnControl(DriveController::StateType x, double t) override;
 
     Eigen::Matrix<DriveController::ValueType, 2, 1> const & linearizedState() const;
+    virtual bool hasDiverged() const override;
 
 protected:
     std::ostream& printSpecificHeaders(std::ostream& s) const override;

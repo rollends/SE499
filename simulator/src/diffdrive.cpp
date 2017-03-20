@@ -168,6 +168,8 @@ Spline const & DriveController::path() const { return mPath; }
 void DriveController::operatingPoint( Spline::ValueType v ) { mOperatingLambda = v; }
 Spline::ValueType DriveController::operatingPoint() const { return mOperatingLambda; }
 
+bool DriveController::hasDiverged() const { return false; }
+
 Matrix<DriveController::ValueType, 2, 1> const & DriveController::goal() const { return mGoal; }
 
 std::ostream& std::operator << (std::ostream& s, DriveController const & c)

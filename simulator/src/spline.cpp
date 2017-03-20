@@ -128,28 +128,31 @@ namespace
     }
 
     /**
-     * Splines a 5th order polynomial through the waypoints that ensures C2
-     * conditions are met as well as a direction requirement at lambda=0
-     *
-     * The system is normally underdetermined so polyfit normally calculates the
-     * right pseduo-inverse and performs a full pivot LU decomposition in order to
-     * solve for the coefficients.
-     */
-    Matrix<ValueType, Dynamic, Spline::CoeffCount>
-    polyfit(Matrix<ValueType, 2, Dynamic> waypoints, double direction)
+        Builds the equality matrix that is used in least squares to achieve
+        C0, C1, and C2 equality at waypoints.
+
+    **/
+    void
+    polyBuildEqualityMatrix( MatrixXT& Aeq,
+                             VectorXT& beq,
+                             double direction = std::quiet_NaN() )
     {
+        constexpr size_t DirectionConstraintCount = 2;
         constexpr auto CoeffCount = Spline::CoeffCount;
 
         auto const waypointCount = waypoints.cols();
         auto const segmentCount = waypointCount - 1;
 
-        // Preallocate the necessary matrices
-        constexpr size_t DirectionConstraintCount = 2;
-        MatrixXT A(8 * (segmentCount-2) + 8 + 4 + DirectionConstraintCount, 2*CoeffCount*segmentCount);
-        VectorXT b(A.rows(), 1);
+        bool const supportDirection = std::isfinite(direction);
 
-        A.setZero();
-        b.setZero();
+        Aeq.resize( 4*(segmentCount-1)                                          // Differential Constraints
+                        + 4*(segmentCount)                                      // Equality Constraints
+                        + (supportDirection ? DirectionConstraintCount : 0)     // Direction Constraint
+                    , 2*CoeffCount*segmentCount );
+        beq.resize(Aeq.rows(), 1);
+
+        Aeq.setZero();
+        beq.setZero();
 
         PolySpace powers = PolySpace::LinSpaced(0, Spline::PolyOrder);
         auto row = 0;
@@ -183,7 +186,7 @@ namespace
             b.block<2, 1>(row, 0) = waypoints.block<2, 1>(0, indSeg + 1);
             row += 2;
 
-            if( indSeg == 0 )
+            if( indSeg == 0 && supportDirection )
             {
                 A.bottomRows(DirectionConstraintCount).block<1, CoeffCount>(0, col) = dLeftTerms;
                 A.bottomRows(DirectionConstraintCount).block<1, CoeffCount>(1, col + CoeffCount) = dLeftTerms;
@@ -212,6 +215,30 @@ namespace
                 row += 2;
             }
         }
+    }
+
+    /**
+     * Splines a 5th order polynomial through the waypoints that ensures C2
+     * conditions are met as well as a direction requirement at lambda=0
+     *
+     * The system is normally underdetermined so polyfit normally calculates the
+     * right pseduo-inverse and performs a full pivot LU decomposition in order to
+     * solve for the coefficients.
+     */
+    Matrix<ValueType, Dynamic, Spline::CoeffCount>
+    polyfit(Matrix<ValueType, 2, Dynamic> waypoints, double direction)
+    {
+        constexpr auto CoeffCount = Spline::CoeffCount;
+
+        auto const waypointCount = waypoints.cols();
+        auto const segmentCount = waypointCount - 1;
+
+        // Preallocate the necessary matrices
+        constexpr size_t DirectionConstraintCount = 2;
+        MatrixXT A;
+        VectorXT b;
+
+        polyBuildEqualityMatrix(A, b, direction);
 
         MatrixXT c(A.cols(), 1);
 
@@ -318,9 +345,9 @@ Spline::ValueType Spline::nearestPoint(Matrix<ValueType, 2, 1> point, ValueType 
             return -2*verr.dot(this->operator()(l, 1));
         };
 
-    double lambda = lambdaStar;
-    double alpha = 1.0;
-    alpha = std::min(alpha, alpha / speed(lambda));
+    ValueType lambda = lambdaStar;
+    ValueType alpha = static_cast<ValueType>(1.0);
+    //alpha = std::min(alpha, alpha / speed(lambda));
 
     do
     {
@@ -340,7 +367,7 @@ Spline::ValueType Spline::nearestPoint(Matrix<ValueType, 2, 1> point, ValueType 
         //return nearestPoint(point, lambdaStar + 1.0 / (2*mSplineCount));
     }
 
-    return std::max(std::min(lambda, 1.0), 0.0);
+    return std::max(std::min(lambda, static_cast<ValueType>(1.0)), static_cast<ValueType>(0.0));
 }
 
 int Spline::splineIndexUsed(ValueType parameter) const

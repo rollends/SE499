@@ -24,7 +24,8 @@ SET(SimSrc  src/diffdrive.cpp
             src/quinticHessian.cpp
             src/sfcontrol.cpp
             src/world.cpp
-            src/plan.cpp)
+            src/plan.cpp
+            src/sylvester.cpp)
 
 SET(TestFiles   src/tests/testSpline.cpp
                 src/tests/testSerretFrenetControl.cpp

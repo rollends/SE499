@@ -51,6 +51,8 @@ struct DriveController
     void updateKnownWorld(std::list<std::pair<World::Box, int>> const & obstacles, bool forceReplan = false);
     void replan();
 
+    virtual bool hasDiverged() const;
+
 protected:
     virtual ValueType genSpeedControl(StateType x, double t);
     virtual ValueType genTurnControl(StateType x, double t);
