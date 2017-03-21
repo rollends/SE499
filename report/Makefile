@@ -12,8 +12,9 @@ clean:
 
 %.pdf: $(TEMP) %.tex %.bib
 	pdflatex -output-directory $(TEMP) $*.tex
-	biber --output_directory $(TEMP) $*.bcf
+	cd $(TEMP) && makeindex $*.nlo -s nomencl.ist -o $*.nls
 	pdflatex -output-directory $(TEMP) $*.tex
+	biber --output_directory $(TEMP) $*.bcf
 	pdflatex -output-directory $(TEMP) $*.tex
 	cp $(TEMP)/$@ $@
 

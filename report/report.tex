@@ -5,16 +5,17 @@
 %
 \input{packages.tex}
 \input{formatting.tex}
+\input{math_util.tex}
 
 \makeindex
 \makenomenclature
 \makeglossaries
 
-
-\author{{\sf Rollen S. D'Souza}\\
-        {\sf Software Engineering Undergraduate}\\
-        {\sf Department of Electrical \& Computer Engineering}}
-\title{\textbf{{\sf SE499 Report --- Path Following Controllers}}}
+\author{{Rollen S. D'Souza}\\
+        {Software Engineering Undergraduate}\\
+        {Department of Electrical \& Computer Engineering}\\
+        {\texttt{rs2dsouz@edu.uwaterloo.ca}}}
+\title{\textbf{SE499 Report --- Path Following Controllers}}
 \date{}
 
 \setcounter{tocdepth}{1}
@@ -34,10 +35,13 @@
 
 \frontmatter
 \section*{Acknowledgments}
+The author thanks Professor Christopher Nielsen for his guidance in developing the required intuition and mathematical tools for path following control design. Plots and simulations were partly written in Mathworks MATLAB under a student licence. Other simulations were written using C++ linked with the Boost library and Catch test framework.
 
 \begin{flushright}
 Rollen S. D'Souza\\
-University of Waterloo
+Software Engineering Undergraduate\\
+University of Waterloo\\
+\texttt{rs2dsouz@edu.uwaterloo.ca}
 \end{flushright}
 
 \tableofcontents
@@ -54,6 +58,53 @@ University of Waterloo
 \pagestyle{fancy}
 \renewcommand{\sectionmark}[1]{\markright{\thesection.\ #1}}
 
+\chapter{Introduction}
+
+\section{Background}
+A common control objective for mobile robots involves tracking a trajectory in the space the robot operates in. This space is defined as the task space of the robot, denoted as $\mathcal{T}$. Often the structure of this space is unknown --- along with the goal --- and the robot must first explore the world using an exploration and mapping algorithm before deciding on a goal and path.  This paper is instead concerned with a restricted subset of this problem.
+
+Consider a differential drive robot starting at location $(0,0)$, placed in a world with an unknown number of obstacles, that is given the objective to reach position $(x,y)$ in task space without colliding with obstacles. A two-pronged approach can be taken to safe-guard from collisions:
+\begin{enumerate}
+    \item Plan a path that does not intersect with any obstacles for all future time.
+    \item Design a controller that ensures sufficiently fast convergence to the path and provides a guarantee, under reasonable assumptions, that the robot will not leave the path.
+\end{enumerate}
+
+Section \ref{sec:planning} covers the techniques used in planning a safe path for all future time. In implementation, planning generally precedes control however in this report the preceding section, Section \ref{sec:control}, concerns itself with controller design. This out-of-order content placement is intended to give the reader a better intuition for the decisions made at planning stage. With this framework in mind, the problem may be stated formally.
+
+\section{Notation}
+\nomenclature{$\mathcal{T}$}{Mobile robot task space.}
+\nomenclature{$\mathcal{T}_{(w,h)}$}{Rectangular mobile robot task space with width $w$ and height $h$.}
+\nomenclature{$\vec{x}$}{A vector in $\R$.}
+\nomenclature{$\vec{x}_i$}{The $i$-th component of vector $\vec{x}$}
+\nomenclature{$\vec{M}$}{A matrix. Can be assumed real unless stated otherwise.}
+\nomenclature{$\vec{M}_{(i,j)}$}{The value at the $i$-th row and $j$-th column of matrix $\vec{M}$. The variables may have a $:$ substituted to indicate selection of all values in that dimension, similar to that found in the Matlab grammar.}
+
+
+\section{Problem Statement}
+Let the task space, without loss of generality, be the rectangular space  $\mathcal{T}_{(w,h)} = \{(x,y)\in\mathbb{R}^2 : 0 \leq x \leq w \wedge 0 \leq y \leq h\}$. For simplicity, consider the kinematic model of a differential drive robot with the combined position and orientation state vector $\vec{x}=\trans{(x,y,\theta)}$. The robot has a forward velocity $v\in\R$, $v>0$ and a controllable turning rate $u:(\vec{x}, t)\to\R$. The kinematic dynamics follow as,
+\begin{equation}
+    \dot{\vec{x}} =
+        \begin{bmatrix}
+            v~cos(\vec{x}_3)\\
+            v~sin(\vec{x}_3)\\
+            0
+        \end{bmatrix}
+        +
+        \begin{bmatrix} 0 \\ 0 \\ 1 \end{bmatrix}
+        u
+    \label{eqn:basic_kinematic_model}
+\end{equation}
+
+\chapter{Approach Description}
+
+\section{Control}\label{sec:control}
+The most basic of controllers is the
+
+\section{Planning}\label{sec:planning}
+
+\chapter{}
+
+
 %\include{./Chapter1/introduction}
 
 \backmatter
@@ -65,7 +116,7 @@ University of Waterloo
 \cleardoublepage
 \phantomsection
 \addcontentsline{toc}{chapter}{Index}
-\markright{{\sc Index}}
+\markright{\textsc{Index}}
 \printindex
 
 \end{document}
