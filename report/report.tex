@@ -69,19 +69,23 @@ Consider a differential drive robot starting at location $(0,0)$, placed in a wo
     \item Design a controller that ensures sufficiently fast convergence to the path and provides a guarantee, under reasonable assumptions, that the robot will not leave the path.
 \end{enumerate}
 
-Section \ref{sec:planning} covers the techniques used in planning a safe path for all future time. In implementation, planning generally precedes control however in this report the preceding section, Section \ref{sec:control}, concerns itself with controller design. This out-of-order content placement is intended to give the reader a better intuition for the decisions made at planning stage. With this framework in mind, the problem may be stated formally.
+TODO : TALK ABOUT PATH PLANNING HISTORY AND STUFF
 
-\section{Notation}
+TODO : TALK ABOUT PROBLEMS WITH TRADITIONAL CONTROL METHODOLOGIES
+
+\section{Notation and Report Organization}
 \nomenclature{$\mathcal{T}$}{Mobile robot task space.}
 \nomenclature{$\mathcal{T}_{(w,h)}$}{Rectangular mobile robot task space with width $w$ and height $h$.}
 \nomenclature{$\vec{x}$}{A vector in $\R$.}
 \nomenclature{$\vec{x}_i$}{The $i$-th component of vector $\vec{x}$}
 \nomenclature{$\vec{M}$}{A matrix. Can be assumed real unless stated otherwise.}
 \nomenclature{$\vec{M}_{(i,j)}$}{The value at the $i$-th row and $j$-th column of matrix $\vec{M}$. The variables may have a $:$ substituted to indicate selection of all values in that dimension, similar to that found in the Matlab grammar.}
+This report assumes proficiency in multi-variable calculus and basic control theory. As a result, any results taken from theory of dynamical systems and other advanced undergraduate mathematical courses are stated and cited from a source used by the author. Scalars are denoted as $x$, vectors as $\vec{x}$ and matrices as $\vec{X}$. Time derivatives are denoted using Newton's dot notation and any other derivatives are denoted using the Leibniz notation.
 
+In practice, planning algorithms generally precede control. However this report instead defers discussion of planning until after describing control methodologies in Section \ref{sec:control}. This content placement is intended to give the reader a better intuition for the decisions made at planning stage.
 
 \section{Problem Statement}
-Let the task space, without loss of generality, be the rectangular space  $\mathcal{T}_{(w,h)} = \{(x,y)\in\mathbb{R}^2 : 0 \leq x \leq w \wedge 0 \leq y \leq h\}$. For simplicity, consider the kinematic model of a differential drive robot with the combined position and orientation state vector $\vec{x}=\trans{(x,y,\theta)}$. The robot has a forward velocity $v\in\R$, $v>0$ and a controllable turning rate $u:(\vec{x}, t)\to\R$. The kinematic dynamics follow as,
+Let the task space, without loss of generality, be the rectangular space  $\mathcal{T}_{(w,h)} = \{(x,y)\in\mathbb{R}^2 : 0 \leq x \leq w \wedge 0 \leq y \leq h\}$. For simplicity, consider the kinematic model of a differential drive robot with the combined position and orientation state vector $\vec{x}=\trans{(x,y,\theta)}$. The robot has a, possibly controllable, forward velocity $v:(\vec{x}, t)\mapsto\R$ with $v>0$ and a controllable turning rate $u:(\vec{x}, t)\mapsto\R$. Unless stated otherwise, $v$ is assumed constant. The kinematic dynamics follow as,
 \begin{equation}
     \dot{\vec{x}} =
         \begin{bmatrix}
@@ -94,18 +98,43 @@ Let the task space, without loss of generality, be the rectangular space  $\math
         u
     \label{eqn:basic_kinematic_model}
 \end{equation}
+The robot, at some unknown finite time, must arrive at the goal region $\mathcal{G}\subset\mathcal{T}$. Note there is no restriction in how it arrives in this region other than it does so safely. Starting at time $t=0$ and then at a regular time interval $\Delta_p$, the robot observes the world and decides, based on the observation, whether a new plan is required to approach the goal region. This may occur, for example, when the robot observes a new obstacle that the robot's currently planned path intersects. The simplest and most widely used planning algorithms are involve the generation of a tree that explores the current model of the world. This family of algorithms generate a sequence of waypoints. This is then used to generate a path $\sigma: \lambda \mapsto \mathcal{T}$ where $\lambda$ is an arbitrary parameterization of the curve. Without loss of generality, this report assumes $\lambda\in[0,1]$.
+
+The path $\sigma_1$ is fed into the path following control which guides the robot over time towards, and along, the path in order to arrive in $\mathcal{G}$. Further, the control algorith must converge towards the path in a manner that is both guaranteed and as fast as possible. It must also faithfully follow the path, in order to reduce the chances of replanning. Given that the robot may not have a perfect model of the world, i.e. is not aware of all obstacles, a replan may still occur. The planning algorithm is required to design the new $\sigma_2$ so as to preserve any properties the control algorithm requires to stay on the trajectory continuously.
+
+\section{Description of Case Study}
+
+TODO : TALK ABOUT THE WATERLOO CAMPUS SIMULATION CASE STUDY
 
 \chapter{Approach Description}
 
 \section{Control}\label{sec:control}
-The most basic of controllers is the
+Three control strategies are considered for path following. The simplest controller, in terms of design and implementation, is the point-chasing controller. The other two techniques rely on the approach of transverse feedback linearization which decomposes the path following problem into transverse and tangential dynamical systems.
+
+\subsection{Point-Chasing Controller}
+A point-chasing controller involves simply treating the parameter $\lambda$ of the path $\sigma$ as a function $t$ and designing a controller that converges to this moving point. In order to improve performance of this strategy, the control is designed around a point that leads the robots current position. That is, consider an observation $\vec{y}_l(\vec{x}(t)) = \trans{(\vec{x}_1, \vec{x}_2)} + l\trans{(cos(\vec{x}_3),sin(\vec{x}_3))}$ for some $l\in\R$, $l>0$. We let $\vec{y}_{ref}(t) = \sigma(\lambda) = \sigma(t)$ where, for simplicity, we assumed that $\lambda = t$.
+
+TODO : INSERT DERIVATION OF POINT CHASING CONTROLLER (TRACKING)
+
+\subsection{Transverse Feedback Linearization}
+
+\subsubsection{General Form}
+
+\subsubsection{Sylvester Approach}
+
+\subsubsection{Serret-Frenet Frame Approach}
 
 \section{Planning}\label{sec:planning}
 
-\chapter{}
+\subsection{RRT}
 
+\subsection{Polynomial Splining}
 
-%\include{./Chapter1/introduction}
+\subsubsection{Essential Splining}
+
+\subsubsection{Constrained Splining}
+
+\chapter{Case Study}
 
 \backmatter
 \cleardoublepage
