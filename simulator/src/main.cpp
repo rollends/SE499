@@ -13,25 +13,24 @@ int main(int argc, char* argv[])
 {
     namespace odeint = boost::numeric::odeint;
 
-    constexpr ValueType Tfinal = 15.0;
     ValueType T = 0.0;
     ValueType dt = 0.0001;
 
     // Initial Condition
     DriveSystem::StateType x{ 0, 0, std::atan2(1.0, 1.0) };
-    auto ode45 = odeint::make_controlled( 1.0e-12 , 1.0e-3 , odeint::runge_kutta_fehlberg78<DriveSystem::StateType, ValueType>() );
-    //auto ode45 = odeint::make_controlled( 1.0e-6 , 1.0e-6 , odeint::runge_kutta_cash_karp54<DriveSystem::StateType>() );
-    //auto ode45 = odeint::make_controlled( 1.0e-12 , 1.0e-3 , odeint::runge_kutta_fehlberg78<DriveSystem::StateType>() );
-    //odeint::bulirsch_stoer<DriveSystem::StateType> ode45(1e-12, 1e-12);
+    auto ode45 = odeint::make_controlled( 1.0e-12 , 1.0e-12 , odeint::runge_kutta_fehlberg78<DriveSystem::StateType, ValueType>() );
+    //auto ode45 = odeint::make_controlled( 1.0e-12 , 1.0e-12 , odeint::runge_kutta_cash_karp54<DriveSystem::StateType, ValueType>() );
 
     World world;
     DriveSystem robot;
+    robot.time(T);
+    robot.state(Map<Matrix<DriveSystem::ValueType, 3, 1>>(x.data()));
 
     const Vector2T goal(95, 95);
     const ValueType goalRadius = 3;
 
-    //SylvesterController sfcontrol(robot, goal, goalRadius);
-    SerretFrenetController sfcontrol(robot, goal, goalRadius);
+    SylvesterController sfcontrol(robot, goal, goalRadius);
+    //SerretFrenetController sfcontrol(robot, goal, goalRadius);
     sfcontrol.printHeaders(std::cout) << std::endl;
 
     // Create World
@@ -43,22 +42,32 @@ int main(int argc, char* argv[])
 
     // Plan every 200ms
     constexpr double PlanTime = 0.050;
-    constexpr ValueType MaxStep = 0.001;
-    constexpr double PrintTime = 0.05;
+    constexpr ValueType MaxStep = 0.0005;
+    constexpr double PrintTime = 0.01;
     double planningClock = 0.0;
     double printingClock = 0.0;
 
     // Prime Planning Algo
-    sfcontrol.updateKnownWorld(world.observeWorld(robot.viewCone()));
+    sfcontrol.updateKnownWorld(world.observeWorld(robot.viewCone()), true);
     do
     {
-        // If we fail, retry with smaller step size (hopefully it converges, eh?)
-        if(odeint::fail == ode45.try_step(std::reference_wrapper<DriveController>(sfcontrol), x, T, dt))
-            continue;
+        try
+        {
+            // If we fail, retry with smaller step size (hopefully it converges, eh?)
+            if(odeint::fail == ode45.try_step(std::reference_wrapper<DriveController>(sfcontrol), x, T, dt))
+                continue;
+        }
+        catch( InvalidPathException const & )
+        {
+            // Force replan.
+            planningClock = 0.0;
+            auto observedWorld = world.observeWorld(robot.viewCone());
+            sfcontrol.updateKnownWorld(observedWorld, true);
+        }
 
         // Update current state of the robot, and enforce constraints.
-        robot.state(Map<Matrix<DriveSystem::ValueType, 3, 1>>(x.data()));
         robot.time(T);
+        robot.state(Map<Matrix<DriveSystem::ValueType, 3, 1>>(x.data()));
 
         dt = std::min( dt, MaxStep );
 

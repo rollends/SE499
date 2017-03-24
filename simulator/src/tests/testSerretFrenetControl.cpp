@@ -19,16 +19,17 @@ SCENARIO( "serret frenet controller applied to polynomial path", "[serretfrenet]
     // Generate a spline
     Matrix<Spline::ValueType, 2, 2> waypoints;
     waypoints(0, 0) = 1; waypoints(1, 0) = 0;
-    waypoints(0, 1) = 100; waypoints(1, 1) = 100;
+    waypoints(0, 1) = 10; waypoints(1, 1) = 10;
 
     // Hopefully the splining works haha
-    Spline spline(waypoints);
+    Spline spline(waypoints, 0);
 
     GIVEN( "constructed serret frenet controller" )
     {
         DriveSystem robot;
-        SerretFrenetController sfcontrol(robot, Vector2T(10, 10), 1);
+        SerretFrenetController sfcontrol(robot, Vector2T(10, 10), 0.5);
         sfcontrol.path(spline);
+        CAPTURE( spline.poly() );
 
         WHEN( "simulated with initial condition on the path" )
         {

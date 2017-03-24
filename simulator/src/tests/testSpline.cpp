@@ -36,13 +36,14 @@ SCENARIO( "waypoints can be splined with a 5th order C^2 polynomial", "[spline]"
                 {
                     auto splinePoint = spline((i * 1.0) / SegmentCount);
                     auto waypoint = waypoints.col(i);
-                    REQUIRE((splinePoint - waypoint).isZero() );
+                    REQUIRE( (splinePoint - waypoint).norm() == Approx(0).margin(1e-12) );
                 }
             }
 
             THEN( "derivative of spline at initial point is what was requested" )
             {
                 auto slope = spline(0, 1);
+                CAPTURE( slope );
                 REQUIRE( std::atan2(slope[1], slope[0]) == Approx(std::atan2(0, 1)) );
             }
         }
@@ -60,7 +61,7 @@ SCENARIO( "waypoints can be splined with a 5th order C^2 polynomial", "[spline]"
 
         WHEN( "splined via contructor" )
         {
-            Spline spline(waypoints);
+            Spline spline(waypoints, std::atan2(1, 1));
             THEN( "waypoints should be on the spline" )
             {
                 for(auto i = 0; i < waypoints.cols(); ++i)
@@ -68,8 +69,15 @@ SCENARIO( "waypoints can be splined with a 5th order C^2 polynomial", "[spline]"
                     auto splinePoint = spline((i * 1.0) / SegmentCount);
                     auto waypoint = waypoints.col(i);
                     CAPTURE( spline.poly() );
-                    REQUIRE((splinePoint - waypoint).isZero() );
+                    REQUIRE( (splinePoint - waypoint).norm() == Approx(0.0).margin(1e-12) );
                 }
+            }
+
+            THEN( "derivative of spline at initial point is what was requested" )
+            {
+                auto slope = spline(0, 1);
+                CAPTURE( slope );
+                REQUIRE( std::atan2(slope[1], slope[0]) == Approx(std::atan2(1, 1)) );
             }
 
             THEN( "spline should observe C1 continuity on all intermediate points" )

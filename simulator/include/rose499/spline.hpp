@@ -21,7 +21,7 @@ struct Spline
     using Line = geom::model::segment< Point >;
     using ApproximateSpline = std::vector< Line >;
 
-    constexpr static int PolyOrder = 3;
+    constexpr static int PolyOrder = 5;
     constexpr static int CoeffCount = PolyOrder + 1;
 
     /** Default Constructor for Spline

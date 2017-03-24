@@ -88,13 +88,15 @@ DriveController::ValueType SylvesterController::genTurnControl(DriveController::
 
     long double lff = (dh * f).transpose() * H * (dh * f);
     long double lgf = J.dot(dh * df.col(2));
-    //long double ulin =  - sqrt(3) * mXi(1);
 
-    auto ucontrol = -(mXi(0) / lgf) - sqrt(3) * (mXi(1) / lgf) - (lff / lgf);
+    constexpr ValueType damping = 2.0;
+    const ValueType g1 = -std::sqrt(10); // choosing g1 to bound xi1 by 0.1
+    const ValueType g2 = -2 * damping * std::pow(10, 0.25);
+
+    auto ucontrol = g1 * mXi(0)/ lgf + g2 * mXi(1) / lgf - (lff / lgf);
 
     assert(!isnan(lff) && !isinf(lff));
     assert(!isnan(lgf) && !isinf(lgf));
-    //assert(!isnan(ulin) && !isinf(ulin));
     assert(!isnan(ucontrol) && !isinf(ucontrol));
 
     return ucontrol;

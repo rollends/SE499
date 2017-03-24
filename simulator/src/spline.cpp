@@ -1,6 +1,7 @@
 #include <cmath>
 #include <Eigen/Dense>
 #include <Eigen/LU>
+#include <limits>
 #include "rose499/spline.hpp"
 
 using namespace Eigen;
@@ -41,14 +42,7 @@ namespace
         return dpoly;
     }
 
-    /**
-     * Splines a 5th order polynomial through the waypoints that ensures C2
-     * conditions are met.
-     *
-     * The system is normally underdetermined so polyfit normally calculates the
-     * right pseduo-inverse and performs a full pivot LU decomposition in order to
-     * solve for the coefficients.
-     */
+/*
     Matrix<ValueType, Dynamic, Spline::CoeffCount>
     polyfit(Matrix<ValueType, 2, Dynamic> waypoints)
     {
@@ -126,6 +120,118 @@ namespace
 
         return result;
     }
+*/
+    /**
+        Builds an equality matrix that only provides end point guarantees and
+        C^2 continuity everywhere.
+    **/
+    void
+    polyBuildSoftEqualityMatrix(    MatrixXT& Aeq,
+                                    VectorXT& beq,
+                                    Matrix<ValueType, 2, Dynamic> const & waypoints,
+                                    double direction = std::numeric_limits<double>::infinity() )
+    {
+        constexpr size_t DirectionConstraintCount = 1;
+        constexpr auto CoeffCount = Spline::CoeffCount;
+
+        auto const waypointCount = waypoints.cols();
+        auto const segmentCount = waypointCount - 1;
+
+        bool const supportDirection = std::isfinite(direction);
+
+        Aeq.resize( 4*(waypointCount-2)                                         // Differential Constraints
+                        + 2*waypointCount                                       // Equality Constraints
+                        + (supportDirection ? DirectionConstraintCount : 0)     // Direction Constraint
+                    , 2*CoeffCount*segmentCount );
+        beq.resize(Aeq.rows(), 1);
+
+        Aeq.setZero();
+        beq.setZero();
+
+        PolySpace powers = PolySpace::LinSpaced(0, Spline::PolyOrder);
+        auto row = 0;
+        for(auto indSeg = 0; indSeg < segmentCount; ++indSeg)
+        {
+            auto col = 2*CoeffCount*indSeg;
+
+            ValueType leftLambda = (indSeg * 1.0) / segmentCount;
+            ValueType rightLambda = ((indSeg + 1.0) * 1.0) / segmentCount;
+
+            PolySpace leftTerms = PolySpace::Constant(leftLambda);
+            PolySpace rightTerms = PolySpace::Constant(rightLambda);
+            leftTerms = pow(leftTerms, powers);
+            rightTerms = pow(rightTerms, powers);
+
+            PolySpace dLeftTerms = polydiff_power(leftTerms, 1);
+            PolySpace ddLeftTerms = polydiff_power(leftTerms, 2);
+
+            PolySpace dRightTerms = polydiff_power(rightTerms, 1);
+            PolySpace ddRightTerms = polydiff_power(rightTerms, 2);
+
+
+            if( indSeg < segmentCount - 1 )
+            {
+                // Right Equality (C0)
+                Aeq.block<1, CoeffCount>(row + 0, col) = rightTerms;
+                Aeq.block<1, CoeffCount>(row + 0, col + 2 * CoeffCount) = -rightTerms;
+                Aeq.block<1, CoeffCount>(row + 1, col + CoeffCount) = rightTerms;
+                Aeq.block<1, CoeffCount>(row + 1, col + 3 * CoeffCount) = -rightTerms;
+                row += 2;
+
+                // Right Differential Continuity (C1)
+                Aeq.block<1, CoeffCount>(row + 0, col) = dRightTerms;
+                Aeq.block<1, CoeffCount>(row + 0, col + 2 * CoeffCount) = -dRightTerms;
+                Aeq.block<1, CoeffCount>(row + 1, col + CoeffCount) = dRightTerms;
+                Aeq.block<1, CoeffCount>(row + 1, col + 3 * CoeffCount) = -dRightTerms;
+                row += 2;
+
+                // Right Differential Continuity (C2)
+                Aeq.block<1, CoeffCount>(row + 0, col) = ddRightTerms;
+                Aeq.block<1, CoeffCount>(row + 0, col + 2 * CoeffCount) = -ddRightTerms;
+                Aeq.block<1, CoeffCount>(row + 1, col + CoeffCount) = ddRightTerms;
+                Aeq.block<1, CoeffCount>(row + 1, col + 3 * CoeffCount) = -ddRightTerms;
+                row += 2;
+            }
+            else
+            {
+                // Hard Right Equality
+                Aeq.block<1, CoeffCount>(row + 0, col) = rightTerms;
+                Aeq.block<1, CoeffCount>(row + 1, col + CoeffCount) = rightTerms;
+                beq.block<2, 1>(row, 0) = waypoints.block<2, 1>(0, indSeg + 1);
+                row += 2;
+            }
+
+            if( indSeg == 0 )
+            {
+                // Left Equality (C0)
+                Aeq.block<1, CoeffCount>(row + 0, col) = leftTerms;
+                Aeq.block<1, CoeffCount>(row + 1, col + CoeffCount) = leftTerms;
+                beq.block<2, 1>(row, 0) = waypoints.block<2, 1>(0, indSeg);
+                row += 2;
+
+                if( supportDirection )
+                {
+                    while(direction > M_PI) direction -= 2*M_PI;
+                    while(direction < -M_PI) direction += 2*M_PI;
+
+                    if( std::abs(direction) <= std::atan2(1.0, 1.0)
+                     || std::abs(direction - M_PI) <= std::atan2(1.0, 1.0)
+                     || std::abs(direction + M_PI) <= std::atan2(1.0, 1.0) )
+                    {
+                        // Small tangent.
+                        Aeq.bottomRows(DirectionConstraintCount).block<1, CoeffCount>(0, col) = std::tan(direction)*dLeftTerms;
+                        Aeq.bottomRows(DirectionConstraintCount).block<1, CoeffCount>(0, col + CoeffCount) = -dLeftTerms;
+                    }
+                    else
+                    {
+                        // Large tangent
+                        Aeq.bottomRows(DirectionConstraintCount).block<1, CoeffCount>(0, col) = -dLeftTerms;
+                        Aeq.bottomRows(DirectionConstraintCount).block<1, CoeffCount>(0, col + CoeffCount) = dLeftTerms / std::tan(direction);
+                    }
+                }
+            }
+        }
+    }
 
     /**
         Builds the equality matrix that is used in least squares to achieve
@@ -135,7 +241,8 @@ namespace
     void
     polyBuildEqualityMatrix( MatrixXT& Aeq,
                              VectorXT& beq,
-                             double direction = std::quiet_NaN() )
+                             Matrix<ValueType, 2, Dynamic> const & waypoints,
+                             double direction = std::numeric_limits<double>::infinity() )
     {
         constexpr size_t DirectionConstraintCount = 2;
         constexpr auto CoeffCount = Spline::CoeffCount;
@@ -175,45 +282,92 @@ namespace
             PolySpace ddRightTerms = polydiff_power(rightTerms, 2);
 
             // Left Equality (C0)
-            A.block<1, CoeffCount>(row + 0, col) = leftTerms;
-            A.block<1, CoeffCount>(row + 1, col + CoeffCount) = leftTerms;
-            b.block<2, 1>(row, 0) = waypoints.block<2, 1>(0, indSeg);
+            Aeq.block<1, CoeffCount>(row + 0, col) = leftTerms;
+            Aeq.block<1, CoeffCount>(row + 1, col + CoeffCount) = leftTerms;
+            beq.block<2, 1>(row, 0) = waypoints.block<2, 1>(0, indSeg);
             row += 2;
 
             // Right Equality (C0)
-            A.block<1, CoeffCount>(row + 0, col) = rightTerms;
-            A.block<1, CoeffCount>(row + 1, col + CoeffCount) = rightTerms;
-            b.block<2, 1>(row, 0) = waypoints.block<2, 1>(0, indSeg + 1);
+            Aeq.block<1, CoeffCount>(row + 0, col) = rightTerms;
+            Aeq.block<1, CoeffCount>(row + 1, col + CoeffCount) = rightTerms;
+            beq.block<2, 1>(row, 0) = waypoints.block<2, 1>(0, indSeg + 1);
             row += 2;
 
-            if( indSeg == 0 && supportDirection )
+            if( (indSeg == 0) && supportDirection )
             {
-                A.bottomRows(DirectionConstraintCount).block<1, CoeffCount>(0, col) = dLeftTerms;
-                A.bottomRows(DirectionConstraintCount).block<1, CoeffCount>(1, col + CoeffCount) = dLeftTerms;
+                Aeq.bottomRows(DirectionConstraintCount).block<1, CoeffCount>(0, col) = dLeftTerms;
+                Aeq.bottomRows(DirectionConstraintCount).block<1, CoeffCount>(1, col + CoeffCount) = dLeftTerms;
 
                 Matrix<ValueType, 2, 1> vec;
                 vec(0) = std::cos(direction);
                 vec(1) = std::sin(direction);
 
-                b.tail(DirectionConstraintCount) = vec;
+                beq.tail(DirectionConstraintCount) = vec;
             }
 
             if( indSeg < segmentCount - 1 )
             {
                 // Right Differential Continuity (C1)
-                A.block<1, CoeffCount>(row + 0, col) = dRightTerms;
-                A.block<1, CoeffCount>(row + 0, col + 2 * CoeffCount) = -dRightTerms;
-                A.block<1, CoeffCount>(row + 1, col + CoeffCount) = dRightTerms;
-                A.block<1, CoeffCount>(row + 1, col + 3 * CoeffCount) = -dRightTerms;
+                Aeq.block<1, CoeffCount>(row + 0, col) = dRightTerms;
+                Aeq.block<1, CoeffCount>(row + 0, col + 2 * CoeffCount) = -dRightTerms;
+                Aeq.block<1, CoeffCount>(row + 1, col + CoeffCount) = dRightTerms;
+                Aeq.block<1, CoeffCount>(row + 1, col + 3 * CoeffCount) = -dRightTerms;
                 row += 2;
 
                 // Right Differential Continuity (C2)
-                A.block<1, CoeffCount>(row + 0, col) = ddRightTerms;
-                A.block<1, CoeffCount>(row + 0, col + 2 * CoeffCount) = -ddRightTerms;
-                A.block<1, CoeffCount>(row + 1, col + CoeffCount) = ddRightTerms;
-                A.block<1, CoeffCount>(row + 1, col + 3 * CoeffCount) = -ddRightTerms;
+                Aeq.block<1, CoeffCount>(row + 0, col) = ddRightTerms;
+                Aeq.block<1, CoeffCount>(row + 0, col + 2 * CoeffCount) = -ddRightTerms;
+                Aeq.block<1, CoeffCount>(row + 1, col + CoeffCount) = ddRightTerms;
+                Aeq.block<1, CoeffCount>(row + 1, col + 3 * CoeffCount) = -ddRightTerms;
                 row += 2;
             }
+        }
+    }
+
+
+    void
+    polyBuildLSQMatrix( MatrixXT& A,
+                        VectorXT& b,
+                        Matrix<ValueType, 2, Dynamic> const & waypoints )
+    {
+        constexpr auto CoeffCount = Spline::CoeffCount;
+        constexpr auto IntermediateSampleCount = 9;
+        const auto waypointCount = waypoints.cols();
+        const auto segmentCount = waypointCount - 1;
+        const auto sampleCount = segmentCount * IntermediateSampleCount;
+        using SampleRow = Matrix<ValueType, 1, IntermediateSampleCount>;
+
+        A.resize(2*sampleCount, 2*CoeffCount*segmentCount);
+        b.resize(A.rows());
+
+        A.setZero();
+        b.setZero();
+
+        PolySpace powers = PolySpace::LinSpaced(0, Spline::PolyOrder);
+        size_t row = 0;
+        size_t colX = 0, colY = CoeffCount;
+        for(auto si = 0; si < segmentCount; ++si)
+        {
+            SampleRow sampleX = Matrix<ValueType, 1, IntermediateSampleCount+2>::LinSpaced(waypoints(0, si), waypoints(0, si+1)).middleCols(1, IntermediateSampleCount);
+            SampleRow sampleY = Matrix<ValueType, 1, IntermediateSampleCount+2>::LinSpaced(waypoints(1, si), waypoints(1, si+1)).middleCols(1, IntermediateSampleCount);
+            SampleRow sampleLambda = Matrix<ValueType, 1, IntermediateSampleCount+2>::LinSpaced(si * 1.0 / segmentCount, (si+1) * 1.0 / segmentCount).middleCols(1, IntermediateSampleCount);
+
+            for(auto i = 0; i < sampleLambda.cols(); ++i)
+            {
+                PolySpace terms = PolySpace::Constant(sampleLambda(i));
+                terms = pow(terms, powers);
+
+                // Equality at the lambda
+                A.block<1, CoeffCount>(row + 0, colX) = terms;
+                A.block<1, CoeffCount>(row + 1, colY) = terms;
+                b(row + 0) = sampleX(i);
+                b(row + 1) = sampleY(i);
+
+                row += 2;
+            }
+
+            colX += 2 * CoeffCount;
+            colY += 2 * CoeffCount;
         }
     }
 
@@ -224,27 +378,49 @@ namespace
      * The system is normally underdetermined so polyfit normally calculates the
      * right pseduo-inverse and performs a full pivot LU decomposition in order to
      * solve for the coefficients.
+     *
+     * Implements https://stanford.edu/class/ee103/lectures/constrained-least-squares/constrained-least-squares_slides.pdf
      */
     Matrix<ValueType, Dynamic, Spline::CoeffCount>
-    polyfit(Matrix<ValueType, 2, Dynamic> waypoints, double direction)
+    polyfit(Matrix<ValueType, 2, Dynamic> waypoints, double direction = std::numeric_limits<double>::infinity() )
     {
         constexpr auto CoeffCount = Spline::CoeffCount;
 
         auto const waypointCount = waypoints.cols();
         auto const segmentCount = waypointCount - 1;
 
-        // Preallocate the necessary matrices
-        constexpr size_t DirectionConstraintCount = 2;
-        MatrixXT A;
-        VectorXT b;
+        MatrixXT Aeq, A;
+        VectorXT beq, b;
 
-        polyBuildEqualityMatrix(A, b, direction);
-
-        MatrixXT c(A.cols(), 1);
+        polyBuildSoftEqualityMatrix(Aeq, beq, waypoints, direction);
+        polyBuildLSQMatrix(A, b, waypoints);
 
         // Moore-Penrose (Right) Pseudo-Inverse
-        c = A.transpose() * (A * A.transpose()).fullPivLu().solve(b);
+        //c = Aeq.transpose() * (Aeq * Aeq.transpose()).fullPivLu().solve(beq);
 
+        // Build full solution matrix F * (x, z)' = (2A'b, beq)'
+        MatrixXT F( A.cols() + Aeq.rows(),
+                    A.cols() + Aeq.rows() );
+        VectorXT v( F.rows() );
+
+        F.setZero();
+        v.setZero();
+
+        F.block(0, 0, A.cols(), A.cols()) = 2 * A.transpose() * A;
+        F.block(0, A.cols(), Aeq.cols(), Aeq.rows()) = Aeq.transpose();
+        F.block(A.cols(), 0, Aeq.rows(), Aeq.cols()) = Aeq;
+
+        v.head(A.cols()) = 2 * A.transpose() * b;
+        v.tail(beq.rows()) = beq;
+
+        VectorXT d = F.fullPivHouseholderQr().solve(v);
+        VectorXT c = d.head(Aeq.cols());
+        /*
+        MatrixXT c(Aeq.cols(), 1);
+
+        // Moore-Penrose (Right) Pseudo-Inverse
+        c = Aeq.transpose() * (Aeq * Aeq.transpose()).fullPivLu().solve(beq);
+        */
         // Map the resulting coefficient vector into our matrix form of the polynomial
         // spline!
         Matrix<ValueType, Dynamic, CoeffCount> result(2 * segmentCount, CoeffCount);
@@ -310,17 +486,30 @@ Matrix<Spline::ValueType, 2, 2> Spline::frame(ValueType parameter, uint32_t deri
 
     if(derivative >= 0)
     {
-        basis.col(0) = tangent / tangent.norm();
+        basis.col(0) = tangent / speed;
+
+        // Rotate the first column by 90 degrees (right handed frame) to form the
+        // full basis for R^2
+        basis.col(1) = basis.col(0).reverse();
+        basis(0, 1) = -basis(0, 1);
+    }
+
+    if(derivative == 1)
+    {
+        basis.col(0) = -basis.col(1);
+        basis.col(1) = tangent / speed;
+        return basis;
     }
 
     if(derivative >= 1)
     {
         Matrix<ValueType, 2, 1> accel = (*this)(parameter, 2);
-        basis.col(0) = ( accel - accel.dot(basis.col(0)) * basis.col(0) ) / speed;
+        Matrix<ValueType, 2, 2> tframe = Matrix<ValueType, 2, 2>::Constant(0);
+        //tframe.col(0) = -basis.col(0) / tangent.squaredNorm();
+        //tframe.col(0) += Matrix<ValueType, 2, 1>::Constant(1.0 / speed);
+        //basis.col(0) = tframe * accel;
 
-        // If we have a 0 curvature, generate the trivial basis (for {0})
-        if( !basis.col(0).isZero() )
-            basis.col(0) /= basis.col(0).norm();
+        basis.col(0) = ( accel - accel.dot(basis.col(0)) * basis.col(0) ) / speed;
     }
 
     if(derivative >= 2)
@@ -347,24 +536,22 @@ Spline::ValueType Spline::nearestPoint(Matrix<ValueType, 2, 1> point, ValueType 
 
     ValueType lambda = lambdaStar;
     ValueType alpha = static_cast<ValueType>(1.0);
-    //alpha = std::min(alpha, alpha / speed(lambda));
+    alpha = std::min(alpha, alpha / speed(lambda));
 
-    do
+    ValueType improvement = 1;
+    int i = 500;
+    while(std::abs(gradient(lambda)) > 1e-6 && (i > 0))
     {
         ValueType estimate = lambda - alpha * gradient(lambda);
-        if( error(estimate) < error(lambda) )
+        improvement = error(estimate) - error(lambda);
+        if( improvement < 0 )
         {
             lambda = estimate;
             alpha *= 1.2;
         }
         else
-            alpha *= 0.8;
-    } while( std::abs(alpha * gradient(lambda)) > 1e-12 );
-
-    if( lambda < 0 )
-    {
-        // perturb initial condition.
-        //return nearestPoint(point, lambdaStar + 1.0 / (2*mSplineCount));
+            alpha *= 0.7;
+        --i;
     }
 
     return std::max(std::min(lambda, static_cast<ValueType>(1.0)), static_cast<ValueType>(0.0));

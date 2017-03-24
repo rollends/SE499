@@ -38,9 +38,14 @@ DriveController::ValueType SerretFrenetController::genTurnControl(DriveControlle
     double lambda = path().nearestPoint(h, operatingPoint());
     operatingPoint(lambda);
 
+    if( std::abs(path().speed(lambda)) < 1e-6 )
+        throw InvalidPathException();
+
     // Formulate Linearized State
     Matrix2T xi;
     Matrix2T s = path()(lambda);
+    Matrix2T ds = path()(lambda, 1);
+    Matrix2T dds = path()(lambda, 2);
     Matrix22T frame = path().frame(lambda);
     Matrix22T dFrame = path().frame(lambda, 1);
 
@@ -50,13 +55,19 @@ DriveController::ValueType SerretFrenetController::genTurnControl(DriveControlle
     mXi(0) = e2.dot(h - s);
     mXi(1) = e2.dot(dh * f);
 
+    constexpr ValueType damping = 2.0;
+    const ValueType g1 = -std::sqrt(10); // choosing g1 to bound xi1 by 0.1
+    const ValueType g2 = -2 * damping * std::pow(10, 0.25);
+
     auto dwdh = e1.transpose() / path().speed(lambda);
     auto de2dx = dFrame.block<2, 1>(0, 1) * dwdh * dh;
-
     auto lff = (de2dx * f).dot( dh * f );
-    auto lgf = (   e2    ).dot( dh * df * g );
-    auto ulin = -mXi(0) - sqrt(3) * mXi(1);
-    auto ucontrol = (10 * ulin - lff) / lgf;
+    //auto lff = (speed*speed - mXi(1)*mXi(1)) * std::abs(dds(0)*ds(1) - dds(1)*ds(0)) / std::pow(path().speed(lambda), 4.0);
+    //auto lgf = (   e2    ).dot( dh * df * g );
+    auto lgf = speed * sqrt(speed*speed - mXi(1)*mXi(1));
+    //auto ulin = -mXi(0) - sqrt(2) * mXi(1);
+    auto ulin = g1 * mXi(0) + g2 * mXi(1);
+    auto ucontrol = (ulin - lff) / lgf;
 
     assert(!isnan(lff) && !isinf(lff));
     assert(!isnan(lgf) && !isinf(lgf));

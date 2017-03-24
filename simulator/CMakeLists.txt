@@ -12,24 +12,38 @@ SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 ADD_COMPILE_OPTIONS(-std=c++11)
 
 # Dependencies
-INCLUDE_DIRECTORIES( "${EIGEN3_INCLUDE_DIR}"
-                     "${BOOST_1_63_0_INCLUDE_DIR}"
-                     "include/" )
+INCLUDE_DIRECTORIES(
+    "${EIGEN3_INCLUDE_DIR}"
+    "${BOOST_1_63_0_INCLUDE_DIR}"
+    "include/"
+)
 
 # Source Files
-SET(SimSrc  src/diffdrive.cpp
-            src/spline.cpp
-            src/quinticLevelSet.cpp
-            src/quinticJacobian.cpp
-            src/quinticHessian.cpp
-            src/sfcontrol.cpp
-            src/world.cpp
-            src/plan.cpp
-            src/sylvester.cpp)
+SET( SimSrc
+    src/diffdrive.cpp
+    src/spline.cpp
+    src/quinticLevelSet.cpp
+    src/quinticJacobian.cpp
+    src/quinticHessian.cpp
+    src/sfcontrol.cpp
+    src/world.cpp
+    src/plan.cpp
+    src/sylvester.cpp
+)
 
-SET(TestFiles   src/tests/testSpline.cpp
-                src/tests/testSerretFrenetControl.cpp
-                src/tests/testWorld.cpp)
+SET( TestFiles
+    src/tests/testSpline.cpp
+    src/tests/testSerretFrenetControl.cpp
+    src/tests/testWorld.cpp
+)
+
+SET_SOURCE_FILES_PROPERTIES(
+    src/quinticLevelSet.cpp
+    src/quinticJacobian.cpp
+    src/quinticHessian.cpp
+    PROPERTIES
+    COMPILE_FLAGS -O0
+)
 
 # Generate Temporary Static lib
 ADD_LIBRARY(rose499 STATIC ${SimSrc})

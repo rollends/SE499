@@ -8,6 +8,8 @@
 #include "rose499/spline.hpp"
 #include "rose499/world.hpp"
 
+struct InvalidPathException{ };
+
 struct DriveSystem
 {
     typedef SimulatorTypes::ValueType ValueType;
@@ -48,7 +50,7 @@ struct DriveController
     std::ostream& printData(std::ostream&) const;
     std::ostream& printHeaders(std::ostream&) const;
 
-    void updateKnownWorld(std::list<std::pair<World::Box, int>> const & obstacles, bool forceReplan = false);
+    bool updateKnownWorld(std::list<std::pair<World::Box, int>> const & obstacles, bool forceReplan = false);
     void replan();
 
     virtual bool hasDiverged() const;

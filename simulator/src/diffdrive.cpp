@@ -25,7 +25,6 @@ DriveController::DriveController(   DriveSystem & driver,
     mPlanIndex(0),
     mOperatingLambda(0)
 {
-    replan();
 }
 
 
@@ -88,7 +87,7 @@ DriveController::ValueType DriveController::genSpeedControl(StateType, double)
     return 1;
 }
 
-void DriveController::updateKnownWorld(std::list< std::pair<World::Box, int> > const & obstacles, bool forceReplan)
+bool DriveController::updateKnownWorld(std::list< std::pair<World::Box, int> > const & obstacles, bool forceReplan)
 {
     auto newList = obstacles;
     auto newEnd = std::remove_if(   newList.begin(),
@@ -104,8 +103,11 @@ void DriveController::updateKnownWorld(std::list< std::pair<World::Box, int> > c
     for(auto&& pair : newList)
         mKnownBoxes.insert(pair.second);
 
-    if( !newList.empty() || forceReplan )
+    if( !newList.empty() || forceReplan ) {
         replan();
+        return true;
+    }
+    return false;
 }
 
 void DriveController::replan()
@@ -126,15 +128,6 @@ void DriveController::replan()
                              World::Point(mGoal[0], mGoal[1]),
                              mGoalRadius );
 
-        /*
-        DEBUG: Just to output the path..incase we think we have a crap path generated.
-        for(auto&& p : path)
-        {
-            std::cout << ";" << "(" << p.get<0>() << "," << p.get<1>() << ")";
-        }
-        std::cout << std::endl;
-        */
-
         Matrix<ValueType, 2, Dynamic> waypoints(2, path.size());
         for(int i = 0; i < waypoints.cols(); ++i)
         {
@@ -144,6 +137,7 @@ void DriveController::replan()
         }
 
         spline = Spline(waypoints, state[2]);
+
         auto const & linApprox = spline.approximation();
 
         for(auto&& segment : linApprox)
