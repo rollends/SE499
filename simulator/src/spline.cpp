@@ -1,5 +1,6 @@
 #include <cmath>
 #include <Eigen/Dense>
+#include <Eigen/Sparse>
 #include <Eigen/LU>
 #include <limits>
 #include "rose499/spline.hpp"
@@ -42,85 +43,6 @@ namespace
         return dpoly;
     }
 
-/*
-    Matrix<ValueType, Dynamic, Spline::CoeffCount>
-    polyfit(Matrix<ValueType, 2, Dynamic> waypoints)
-    {
-        constexpr auto CoeffCount = Spline::CoeffCount;
-
-        auto const waypointCount = waypoints.cols();
-        auto const segmentCount = waypointCount - 1;
-
-        // Preallocate the necessary matrices
-        MatrixXT A(4*(segmentCount-1) + 4*(segmentCount), 2*CoeffCount*segmentCount);
-        VectorXT b(A.rows(), 1);
-
-        A.setZero();
-        b.setZero();
-
-        PolySpace powers = PolySpace::LinSpaced(0, Spline::PolyOrder);
-        auto row = 0;
-        for(auto indSeg = 0; indSeg < segmentCount; ++indSeg)
-        {
-            auto col = 2 * CoeffCount * indSeg;
-
-            ValueType leftLambda = (indSeg * 1.0) / segmentCount;
-            ValueType rightLambda = ((indSeg + 1.0) * 1.0) / segmentCount;
-
-            PolySpace leftTerms = PolySpace::Constant(leftLambda);
-            PolySpace rightTerms = PolySpace::Constant(rightLambda);
-            leftTerms = pow(leftTerms, powers);
-            rightTerms = pow(rightTerms, powers);
-
-            PolySpace dLeftTerms = polydiff_power(leftTerms, 1);
-            PolySpace ddLeftTerms = polydiff_power(leftTerms, 2);
-
-            PolySpace dRightTerms = polydiff_power(rightTerms, 1);
-            PolySpace ddRightTerms = polydiff_power(rightTerms, 2);
-
-            // Left Equality (C0)
-            A.block<1, CoeffCount>(row + 0, col) = leftTerms;
-            A.block<1, CoeffCount>(row + 1, col + CoeffCount) = leftTerms;
-            b.block<2, 1>(row, 0) = waypoints.block<2, 1>(0, indSeg);
-            row += 2;
-
-            // Right Equality (C0)
-            A.block<1, CoeffCount>(row + 0, col) = rightTerms;
-            A.block<1, CoeffCount>(row + 1, col + CoeffCount) = rightTerms;
-            b.block<2, 1>(row, 0) = waypoints.block<2, 1>(0, indSeg + 1);
-            row += 2;
-
-            if( indSeg < segmentCount - 1 )
-            {
-                // Right Differential Continuity (C1)
-                A.block<1, CoeffCount>(row + 0, col) = dRightTerms;
-                A.block<1, CoeffCount>(row + 0, col + 2 * CoeffCount) = -dRightTerms;
-                A.block<1, CoeffCount>(row + 1, col + CoeffCount) = dRightTerms;
-                A.block<1, CoeffCount>(row + 1, col + 3 * CoeffCount) = -dRightTerms;
-                row += 2;
-
-                // Right Differential Continuity (C2)
-                A.block<1, CoeffCount>(row + 0, col) = ddRightTerms;
-                A.block<1, CoeffCount>(row + 0, col + 2 * CoeffCount) = -ddRightTerms;
-                A.block<1, CoeffCount>(row + 1, col + CoeffCount) = ddRightTerms;
-                A.block<1, CoeffCount>(row + 1, col + 3 * CoeffCount) = -ddRightTerms;
-                row += 2;
-            }
-        }
-
-        MatrixXT c(A.cols(), 1);
-
-        // Moore-Penrose (Right) Pseudo-Inverse
-        c = A.transpose() * (A * A.transpose()).fullPivLu().solve(b);
-
-        // Map the resulting coefficient vector into our matrix form of the polynomial
-        // spline!
-        Matrix<ValueType, Dynamic, CoeffCount> result(2 * segmentCount, CoeffCount);
-        result = Map< Matrix<ValueType, Dynamic, CoeffCount, RowMajor> >(c.data(), result.rows(), result.cols());
-
-        return result;
-    }
-*/
     /**
         Builds an equality matrix that only provides end point guarantees and
         C^2 continuity everywhere.
@@ -413,7 +335,21 @@ namespace
         v.head(A.cols()) = 2 * A.transpose() * b;
         v.tail(beq.rows()) = beq;
 
-        VectorXT d = F.fullPivHouseholderQr().solve(v);
+        VectorXT d(F.rows(), 1);
+        if( F.rows() > 100 )
+        {
+            SparseMatrix<ValueType, ColMajor> Fs;
+            Fs = F.sparseView();
+
+            SparseLU< SparseMatrix<ValueType, ColMajor> > solver;
+            solver.analyzePattern(Fs);
+            solver.factorize(Fs);
+            d = solver.solve(v);
+        }
+        else
+        {
+            d = F.fullPivHouseholderQr().solve(v);
+        }
         VectorXT c = d.head(Aeq.cols());
         /*
         MatrixXT c(Aeq.cols(), 1);
@@ -493,22 +429,17 @@ Matrix<Spline::ValueType, 2, 2> Spline::frame(ValueType parameter, uint32_t deri
         basis.col(1) = basis.col(0).reverse();
         basis(0, 1) = -basis(0, 1);
     }
-
+/*
     if(derivative == 1)
     {
         basis.col(0) = -basis.col(1);
         basis.col(1) = tangent / speed;
         return basis;
-    }
+    }*/
 
     if(derivative >= 1)
     {
         Matrix<ValueType, 2, 1> accel = (*this)(parameter, 2);
-        Matrix<ValueType, 2, 2> tframe = Matrix<ValueType, 2, 2>::Constant(0);
-        //tframe.col(0) = -basis.col(0) / tangent.squaredNorm();
-        //tframe.col(0) += Matrix<ValueType, 2, 1>::Constant(1.0 / speed);
-        //basis.col(0) = tframe * accel;
-
         basis.col(0) = ( accel - accel.dot(basis.col(0)) * basis.col(0) ) / speed;
     }
 
@@ -647,9 +578,16 @@ void Spline::approximateSelf()
 
         mApproximation.push_back(currentSegment);
     } while( startLambda < 1.0 );
+
+    mArcLength = 0;
+    for(auto&& line : mApproximation)
+    {
+        mArcLength += geom::length(line);
+    }
 }
 
 Matrix<Spline::ValueType, Dynamic, Spline::CoeffCount> Spline::poly() const { return mPoly; }
 Matrix<Spline::ValueType, Dynamic, Spline::CoeffCount> Spline::dpoly() const{ return mDPoly; }
 Matrix<Spline::ValueType, Dynamic, Spline::CoeffCount> Spline::ddpoly() const{ return mDDPoly; }
 Spline::ApproximateSpline const & Spline::approximation() const { return mApproximation; }
+Spline::ValueType Spline::arclength() const { return mArcLength; }

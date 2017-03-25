@@ -73,7 +73,7 @@ std::list< Point > planRRT(     World::RTree knownWorld,
                     double proj = vecLeaving.dot(vecEntering) / (vecLeaving.norm() * vecEntering.norm());
 
                     return (vecLeaving.dot(vecEntering) < 0)
-                        || (std::acos(proj) > std::atan2(0.75, 1))
+                        || (std::acos(proj) > std::atan2(1, 1))
                         ;//|| (vecLeaving.norm() < 1);
                 }
             );

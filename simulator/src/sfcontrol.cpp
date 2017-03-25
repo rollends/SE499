@@ -55,17 +55,16 @@ DriveController::ValueType SerretFrenetController::genTurnControl(DriveControlle
     mXi(0) = e2.dot(h - s);
     mXi(1) = e2.dot(dh * f);
 
-    constexpr ValueType damping = 2.0;
-    const ValueType g1 = -std::sqrt(10); // choosing g1 to bound xi1 by 0.1
-    const ValueType g2 = -2 * damping * std::pow(10, 0.25);
+    constexpr ValueType damping = 1.0;
+    const ValueType g1 = -std::sqrt(10.0); // choosing g1 to bound xi1 by 0.1
+    const ValueType g2 = -2 * damping * std::pow(10.0, 0.25);
 
     auto dwdh = e1.transpose() / path().speed(lambda);
     auto de2dx = dFrame.block<2, 1>(0, 1) * dwdh * dh;
     auto lff = (de2dx * f).dot( dh * f );
     //auto lff = (speed*speed - mXi(1)*mXi(1)) * std::abs(dds(0)*ds(1) - dds(1)*ds(0)) / std::pow(path().speed(lambda), 4.0);
     //auto lgf = (   e2    ).dot( dh * df * g );
-    auto lgf = speed * sqrt(speed*speed - mXi(1)*mXi(1));
-    //auto ulin = -mXi(0) - sqrt(2) * mXi(1);
+    auto lgf = speed * std::sqrt(speed*speed - mXi(1)*mXi(1));
     auto ulin = g1 * mXi(0) + g2 * mXi(1);
     auto ucontrol = (ulin - lff) / lgf;
 
@@ -88,20 +87,47 @@ bool SerretFrenetController::hasDiverged() const
 
 std::ostream& SerretFrenetController::printSpecificHeaders(std::ostream& s) const
 {
-    return s << ", lambdaStar, spline_ind, sigma_1, sigma_2, xi_1, xi_2";
+    return s << ", lambdaStar, spline_ind, sigma_1, sigma_2, xi_1, xi_2, delta_xi_2";
 }
 
 std::ostream& SerretFrenetController::printSpecificData(std::ostream& s) const
 {
-    auto state = linearizedState();
+    using Matrix3T = Matrix<ValueType, 3, 1>;
+    using Matrix2T = Matrix<ValueType, 2, 1>;
+    using Matrix22T = Matrix<ValueType, 2, 2>;
+
+    auto x = system().state();
     auto lambda = operatingPoint();
     auto sigma = path()(lambda);
+
+    auto speed = 1; // TODO: assume. very wrong.
+
+    Matrix2T ds = path()(lambda, 1);
+    Matrix2T dds = path()(lambda, 2);
+    Matrix22T frame = path().frame(lambda);
+
+    auto e1 = frame.block<2, 1>(0, 0);
+    auto e2 = frame.block<2, 1>(0, 1);
+
+    Matrix3T f;
+    Matrix2T h, hf;
+
+    f << speed * std::cos(x[2]), speed * std::sin(x[2]), 0;
+    h << x[0], x[1];
+    hf = f.head(2);
+
+    auto mXi0 = e2.dot(h - sigma);
+    auto mXi1 = e2.dot(hf);
+
+    auto errorXi2 = -dds.dot(e2) * hf.dot(e1) * (h - sigma).dot(e1) / ds.squaredNorm();
+
     return s << ", " << lambda
              << ", " << path().splineIndexUsed(lambda)
              << ", " << sigma[0]
              << "," << sigma[1]
-             << ", " << state[0]
-             << "," << state[1];
+             << ", " << mXi0
+             << "," << mXi1
+             << "," << errorXi2;
 }
 
 Matrix<DriveController::ValueType, 2, 1> const & SerretFrenetController::linearizedState() const { return mXi; }

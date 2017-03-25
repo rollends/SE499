@@ -43,7 +43,7 @@ struct Spline
     Eigen::Matrix<ValueType, Eigen::Dynamic, CoeffCount> poly() const;
     Eigen::Matrix<ValueType, Eigen::Dynamic, CoeffCount> dpoly() const;
     Eigen::Matrix<ValueType, Eigen::Dynamic, CoeffCount> ddpoly() const;
-
+    ValueType arclength() const;
 
     class SplineException{ };
     class InvalidParameterException : public SplineException { };
@@ -57,6 +57,7 @@ private:
     Eigen::Matrix<ValueType, Eigen::Dynamic, CoeffCount> mDPoly;
     Eigen::Matrix<ValueType, Eigen::Dynamic, CoeffCount> mDDPoly;
     ApproximateSpline mApproximation;
+    ValueType mArcLength;
 };
 
 #endif

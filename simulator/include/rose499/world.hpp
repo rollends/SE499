@@ -11,8 +11,8 @@ namespace geom = boost::geometry;
 
 struct World
 {
-    static constexpr double XMax = 100.0;
-    static constexpr double YMax = 100.0;
+    static constexpr double XMax = 430.0;
+    static constexpr double YMax = 630.0;
 
     using Point = geom::model::point<double, 2, geom::cs::cartesian>;
     using Polygon = geom::model::polygon<Point>;

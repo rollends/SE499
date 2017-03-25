@@ -53,6 +53,8 @@ struct DriveController
     bool updateKnownWorld(std::list<std::pair<World::Box, int>> const & obstacles, bool forceReplan = false);
     void replan();
 
+    DriveSystem const & system() const;
+
     virtual bool hasDiverged() const;
 
 protected:

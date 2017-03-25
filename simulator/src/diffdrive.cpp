@@ -46,8 +46,8 @@ World::Polygon DriveSystem::viewCone() const
         Vector2d viewRight = right * dir;
         Vector2d viewLeft = left * dir;
 
-        geom::append(viewFrustum.outer(), World::Point(mState[0] + 10 * viewLeft[0], mState[1] + 10 * viewLeft[1]));
-        geom::append(viewFrustum.outer(), World::Point(mState[0] + 10 * viewRight[0], mState[1] + 10 * viewRight[1]));
+        geom::append(viewFrustum.outer(), World::Point(mState[0] + 50 * viewLeft[0], mState[1] + 50 * viewLeft[1]));
+        geom::append(viewFrustum.outer(), World::Point(mState[0] + 50 * viewRight[0], mState[1] + 50 * viewRight[1]));
     }
     geom::append(viewFrustum.outer(), World::Point(mState[0], mState[1]));
     return viewFrustum;
@@ -161,6 +161,8 @@ Spline const & DriveController::path() const { return mPath; }
 
 void DriveController::operatingPoint( Spline::ValueType v ) { mOperatingLambda = v; }
 Spline::ValueType DriveController::operatingPoint() const { return mOperatingLambda; }
+
+DriveSystem const & DriveController::system() const { return mSystem; }
 
 bool DriveController::hasDiverged() const { return false; }
 
