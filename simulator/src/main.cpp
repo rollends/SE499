@@ -5,6 +5,7 @@
 
 #include "rose499/sfcontrol.hpp"
 #include "rose499/sylvester.hpp"
+#include "rose499/trackcontrol.hpp"
 
 using namespace Eigen;
 using namespace SimulatorTypes;
@@ -21,7 +22,6 @@ int main(int argc, char* argv[])
     // Initial Condition
     DriveSystem::StateType x{ 325, 95, std::atan2(1.0, -1.0) };
     auto ode45 = odeint::make_controlled( 1.0e-12 , 1.0e-12 , odeint::runge_kutta_cash_karp54<DriveSystem::StateType, ValueType>() );
-    //auto ode45 = odeint::make_controlled( 1.0e-12 , 1.0e-12 , odeint::runge_kutta_cash_karp54<DriveSystem::StateType, ValueType>() );
 
     World world;
     DriveSystem robot;
@@ -31,8 +31,8 @@ int main(int argc, char* argv[])
     const Vector2T goal(218, 600);
     const ValueType goalRadius = 5;
 
-    //SylvesterController sfcontrol(robot, goal, goalRadius);
     SerretFrenetController sfcontrol(robot, goal, goalRadius);
+    //TrackingController sfcontrol(robot, goal, goalRadius);
     sfcontrol.printHeaders(std::cout) << std::endl;
 
     // Create World
@@ -49,7 +49,6 @@ int main(int argc, char* argv[])
     sfcontrol.updateKnownWorld(world.observeWorld(robot.viewCone()), true);
     do
     {
-        //std::cout << sfcontrol.path().poly() << std::endl;
         try
         {
             // If we fail, retry with smaller step size (hopefully it converges, eh?)
@@ -99,6 +98,9 @@ void fillCampusWorld(World& world)
 {
     // Scale , 64 units = 100m
     //      => 1 m /s  = 0.64 units / s
+    // Really it isn't a terrible assumption to say our speed is 1 units / s as
+    // that is equivalent to about 1.56 m / s in real world speeds. That is
+    // fairly reasonable I think.
     int i = 0;
     world.addBoxObstacle(i++, 351, 429, 77, 200);
     world.addBoxObstacle(i++, 292, 528, 40, 35);

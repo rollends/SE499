@@ -29,6 +29,7 @@ SET( SimSrc
     src/world.cpp
     src/plan.cpp
     src/sylvester.cpp
+    src/trackcontrol.cpp
 )
 
 SET( TestFiles

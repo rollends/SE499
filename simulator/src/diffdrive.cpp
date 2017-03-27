@@ -153,6 +153,7 @@ void DriveController::replan()
 
     path(spline);
     operatingPoint(0.0);
+    lastPlanTime = system().time();
     ++mPlanIndex;
 }
 

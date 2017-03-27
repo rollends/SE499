@@ -64,6 +64,8 @@ protected:
     virtual std::ostream& printSpecificHeaders(std::ostream&) const;
     virtual std::ostream& printSpecificData(std::ostream&) const;
 
+    double lastPlanTime;
+
 private:
     int mPlanIndex;
     Spline mPath;

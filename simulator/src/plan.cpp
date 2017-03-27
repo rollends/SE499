@@ -11,7 +11,7 @@ using TaggedPoint = std::pair< Point, int >;
 
 namespace
 {
-    std::mt19937_64 engine(0x1EA5ECAD);
+    std::mt19937_64 engine(0x1EA5ECED);
 }
 
 std::list< Point > planRRT(     World::RTree knownWorld,
@@ -25,6 +25,7 @@ std::list< Point > planRRT(     World::RTree knownWorld,
     std::uniform_real_distribution<> samplerX(0, xMax), samplerY(0, yMax);
 
     TaggedPoint lastPoint(initialPoint, 0);
+    double closestDist = std::max(xMax, yMax);
 
     geom::index::rtree< TaggedPoint, geom::index::linear<5, 1> > setPoints;
     std::map< uint32_t, uint32_t > backEdges;
@@ -41,13 +42,20 @@ std::list< Point > planRRT(     World::RTree knownWorld,
         setNearest.clear();
         setCollisions.clear();
 
-        auto randomPoint = TaggedPoint(Point(samplerX(engine), samplerY(engine)), indTaggedPoint);
+        std::normal_distribution<> importanceSamplerX(goal.get<0>(), closestDist),
+                                   importanceSamplerY(goal.get<1>(), closestDist);
+        auto x = importanceSamplerX(engine);
+        auto y = importanceSamplerY(engine);
+
+      if( x > xMax || x < 0 || y > yMax || y < 0 ) { continue; }
+
+        auto randomPoint = TaggedPoint(Point(x, y), indTaggedPoint);
         Eigen::Vector2d eigRandomPoint(randomPoint.first.get<0>(), randomPoint.first.get<1>());
 
         // Just make sure this isn't a crap point that is inside an obstacle.
         knownWorld.query( geom::index::intersects(randomPoint.first), std::back_inserter(setCollisions));
-        if( !setCollisions.empty() )
-            continue;
+
+      if( !setCollisions.empty() ) { continue; }
 
         // find nearest point in our set
         setPoints.query( geom::index::nearest(randomPoint.first, 10), std::back_inserter(setNearest) );
@@ -79,8 +87,7 @@ std::list< Point > planRRT(     World::RTree knownWorld,
             );
         setNearest.erase(endSetNearest, setNearest.end());
 
-        if( setNearest.empty() )
-            continue;
+      if( setNearest.empty() ) { continue; }
 
         std::sort(  setNearest.begin(),
                     setNearest.end(),
@@ -94,8 +101,13 @@ std::list< Point > planRRT(     World::RTree knownWorld,
         // gotta make sure the path is obstacle free
         geom::model::segment< World::Point > lineTo(nearestPoint.first, randomPoint.first);
         knownWorld.query( geom::index::intersects(lineTo), std::back_inserter(setCollisions));
-        if( !setCollisions.empty() )
-            continue;
+
+      if( !setCollisions.empty() ) { continue; }
+
+        closestDist = std::min( closestDist,
+                        std::max( std::abs(nearestPoint.first.get<0>() - goal.get<0>()),
+                                  std::abs(nearestPoint.first.get<1>() - goal.get<1>()) )
+                      );
 
         setPoints.insert(randomPoint);
         listPoints.push_back(randomPoint);
