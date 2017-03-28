@@ -29,7 +29,7 @@ DriveController::ValueType TrackingController::genTurnControl(DriveController::S
     sigma = path()(t / LambdaRate);
     dsigma = path()(t / LambdaRate, 1);
 
-    Matrix2T error = h - sigma;
+    Matrix2T error = (h+tau*LeadDistance) - sigma;
 
     ucontrol = (R*tau).dot(K*error + dsigma / LambdaRate) / LeadDistance;
 
@@ -56,7 +56,7 @@ DriveController::ValueType TrackingController::genSpeedControl(DriveController::
     sigma = path()(t / LambdaRate);
     dsigma = path()(t / LambdaRate, 1);
 
-    Matrix2T error = h - sigma;
+    Matrix2T error = (h+tau*LeadDistance) - sigma;
 
     vcontrol = tau.dot(K*error + dsigma / LambdaRate);
 

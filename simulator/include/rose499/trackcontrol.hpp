@@ -7,7 +7,7 @@
 
 struct TrackingController : public DriveController
 {
-    static constexpr double LeadDistance = 10;
+    static constexpr double LeadDistance = 1;
     static constexpr double LambdaRate = 600.0;
 
     TrackingController(DriveSystem&, Eigen::Matrix<ValueType, 2, 1> goal, ValueType goalRadius);

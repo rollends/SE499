@@ -47,11 +47,13 @@ University of Waterloo\\
 \tableofcontents
 
 \printnomenclature[3cm]
+\listoffigures
+\listoftables
 
-\cleardoublepage
-\phantomsection
-\addcontentsline{toc}{chapter}{Acronyms and Initialisms}
-\printglossary[title=Acronyms and Initialisms]
+%\cleardoublepage
+%\phantomsection
+%\addcontentsline{toc}{chapter}{Acronyms and Initialisms}
+%\printglossary[title=Acronyms and Initialisms]
 
 %%%%%%%%%%%%      MAIN MATTER      %%%%%%%%%%%%
 \mainmatter
@@ -473,7 +475,7 @@ Now we prove the main result,
         \dot{V} &=  4\xi_1^3\dot{\xi}_1 + 2a\left[\xi_1\dot{\xi}_1\xi_2^2 + \xi_1^2\xi_2\dot{\xi}_2\right] + 4b\xi_2^3\dot{\xi}_2\\
                 &=  4\xi_1^3\xi_2 + 2a\left[\xi_1\xi_2^3 + g_1\xi_1^3\xi_2 + g_2\xi_1^2\xi_2^2\right] + 4bg_1\xi_1\xi_2^3 + 4bg_2\xi_2^4\\
                 &=  \left(4+2ag_1\right)\xi_1^3\xi_2 + 2\left(a + 2bg_1\right)\xi_1\xi_2^3 + \left(2a\xi_1^2\xi_2^2 + 4b\xi_2^4\right)g_2\\
-                &=  \left(4+2ag_1\right)\xi_1^3\xi_2 + 2\left(a + 2Dv^{-4}g_1\right)\xi_1\xi_2^3 + \left(2a\xi_1^2\xi_2^2 + 4Dv^{-4}\xi_2^4\right)g_2\\
+                &=  \left(4+2ag_1\right)\xi_1^3\xi_2 + 2\left(a + 2Dv^{-4}g_1\right)\xi_1\xi_2^3 + \left(2a\xi_1^2\xi_2^2 + 4Dvd^{-4}\xi_2^4\right)g_2\\
     \end{align*}
     Impose the requirement that cross-terms vanish identically. This gives restrictions on $a$ and $g_1$.
     \begin{align*}
@@ -486,6 +488,7 @@ Now we prove the main result,
     $$
     We can now see that the conditions on $\Omega$ are in fact observed with $D = M^4$. However, we still need to prove asymptotic stability. We now know that $\dot{V} = \left(2a\xi_1^2\xi_2^2 + 4Dv^{-4}\xi_2^4\right)g_2$. This function is zero on the $\xi_2=0$ axis. However, we note that since $g_1 \neq 0$, there are no equilibria on this axis. More importantly, no other whole orbits exist on this axis except for the equilibrium point, $\xi=\vec{0}$. By Theorem \ref{thm:lasalle}, the system is asymptotically stable as required.
 \end{proof}
+This result motivates a control design methodology for the Serret-Frenet controller. By choosing a maximum allowable orthogonal error $M$, the gain $g_1 = -(\frac{v}{M})^2$ is determined. Then overshoot requirements may be satisfied by choice in $g_2$. We choose to have critical damping, mandating $g_2 = -2\frac{v}{M}$. Observe that as $M\to 0$, that the gains are unbounded. This is as one would expect.
 
 \chapter{Planning}\label{sec:planning}
 
@@ -499,12 +502,114 @@ Now we prove the main result,
 
 \chapter{Case Study}
 
-\section{Baseline Benchmarks}
-An initial performance comparision on the controllers was performed in MATLAB with a quintic polynomial path generated using the technique described in Section \ref{sec:restrictpolyfit}. The polynomial has small coefficients with enough curvature to have interesting behaviour but not too high curvature that may adversely affect all controllers.
+\section{Baseline Study}
+An initial performance comparision on the controllers was performed in MATLAB with a quintic polynomial path generated using the technique described in Section \ref{sec:restrictpolyfit}. The polynomial has small coefficients with enough curvature to have interesting behaviour but not too high curvature that may adversely affect all controllers. The path can be seen in both Figure \ref{fig:tfl_compare_task} and Figure \ref{fig:track}. The tracking controller, as seen in Figure \ref{fig:track}, seems to successfully track the path.
+\begin{figure}[H]
+    \centering
+    \includegraphics{images/tracking_control.eps}
+    \caption{The track of the robot controlled by Tracking Control in task space. Driving towards and onto path.}
+    \label{fig:track}
+\end{figure}
 
-\subsection{Tracking Controller}
+The Serret-Frenet and Sylvester controllers should exhibit exponential convergence to the path; the gains are chosen so as to guarantee exponential stability in $\xi$. Gains are chosen to ensure the Serret-Frenet controller doesn't exceed an orthogonal tracking error of $0.1$. The Sylvester approach uses the exact same gains to provide a fair comparison. Figure \ref{fig:tfl_compare_task} shows the resulting path of both robots in a situation where they are on the path but not facing in the right direction --- the robots start with a heading error of over 45 degrees. Notice that both methodologies converge and remain on the path no matter the behaviour of the curve.
 
-\subsection{Transverse Feedback Linearization Controllers}
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics{images/tfl_compare_task.eps}
+    \caption{The track of the robots in task space driving towards and on the path.}
+    \label{fig:tfl_compare_task}
+\end{figure}
+
+Figure \ref{fig:tfl_compare_task} isn't precise enough to verify performance, so we turn to the orthogonal tracking error plot in Figure \ref{fig:tfl_compare_tracking}. It is now apparent how far away both methods go before converging to the path tangentially. Interestingly, the Sylvester controller outperforms the Serret-Frenet controller in both maximum deviation and rate of convergence. At face value, this indicates that the Sylvester controller is the one to choose.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics{images/tfl_compare_tracking.eps}
+    \caption{Comparison of tracking error. Notice that both experience exponential convergence, however the Sylvester method seems to converge faster.}
+    \label{fig:tfl_compare_tracking}
+\end{figure}
+
+Figure \ref{fig:tfl_compare_state} evaporates any such deduction. The Sylvester controller generates states that are orders of magnitude larger than the Serret-Frenet controller, which in turn means the Sylvester controller generates extremely large control signals. Keep in mind that the error in position was less than $10^{-1}$! This is impractical. Furthermore, this baseline test was only done for a simple polynomial with small coefficients. As a result, there is no reason to expect this method will extend well for large polynomial over a large domain.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics{images/tfl_compare_state.eps}
+    \caption{The linearized state $\xi$ for both controllers. Take careful note of the scale of the axes!}
+    \label{fig:tfl_compare_state}
+\end{figure}
+
+This isn't the only dimension where the Sylvester controller falls short. Table \ref{tab:perf_simple} collates the time-cost of executing the control-generation functions for both controllers, measured in MATLAB. The gradient descent algorithm is included so as to provide a useful baseline of performance. Notice that the gradient descent is the dominating cost in the Serret-Frenet controller. The Sylvester controller, on the other hand, performs poorly. In fact, data --- not shown here --- indicates that 62\% of the time is spent just calculating the $\xi$ state vector. Any implementation of the Sylvester controller can perform, at best, around 30 steps per second. The reader would like to take note that the machine used for benchmarking uses an Intel processor running at 2.50GHz. An embedded processor is unlikely to effectively execute the Sylvester controller. Unfortunately, these are timing benchmarks and are, as a result, not easily transferable to other hardware. An analysis of floating point operations is required.
+\begin{table}[!htbp]
+    \centering
+    \begin{tabular}{l|c|c|c}
+        Function of Interest & Total Time Used (s) & Number of Calls & Estimated Cost (ms) \\ \hline
+        \emph{Gradient Descent} & $11.339$ & $2017$ & $5.6217$\\ \hline
+        Serret-Frenet & $12.812$ & $2017$ & $6.3520$ \\ \hline
+        Sylvester & $61.338$ & $2095$ & $29.278$
+    \end{tabular}
+    \caption{Time cost of the control generation functions. The gradient descent algorithm cost is included in their timing results.}
+    \label{tab:perf_simple}
+\end{table}
+
+Both controllers were implemented in C++ and compiled with GCC with optimizations turned off in order to correctly estimate number of floating point operations. Table \ref{tab:perf_flop} lists the results. The Serret-Frenet controller is expected to be 3 orders of magnitude faster just by a rough count of floating point operations. This is a rough estimate as it doesn't account for optimizations.
+
+\begin{table}[!htbp]
+    \centering
+    \begin{tabular}{l|c|c}
+        Function of Interest & Floating Point Operation Count & Comments\\ \hline
+        Serret-Frenet & $316$ & From evaluating polynomial and its derivatives.\\  \hline
+        Sylvester & $111159$ & From the level set evaluation functions.
+    \end{tabular}
+    \caption{Floating point operation counts. Manually counted by assembly inspection and regular expression searches, cross-verified with actual source code. Values may vary by single-digit percentiles but their order of magnitude should remain the same.}
+    \label{tab:perf_flop}
+\end{table}
+
+\section{Mock World Study}
+In this section, the controllers are pitted against one another in a mock real world use case. The University of Waterloo campus map was mocked, treating buildings as rectangular obstacles, as shown in Figure \ref{fig:mock_campus}. The robots begin at the bottom of campus and are told to make their way to the top of campus. An implementation of RRT is used to discover paths to the goal. The spline generated is a sequence of quintic polynomials stitched together preserving $C^2$ continuity as required. The path followed by both the Serret-Frenet controller and the Tracking controller are shown in Figures \ref{fig:mock_campus_serret_frenet} and \ref{fig:mock_campus_tracking}. The asterisks occur at points where the robot made the decision to change the path, i.e. initiate path planning.
+
+\begin{figure}[!htbp]
+    \centering
+    \begin{subfigure}[t]{0.4\textwidth}
+        \includegraphics[width=\linewidth]{images/campus_map.PNG}
+        \caption{Original campus map.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.4\textwidth}
+        \includegraphics[width=\linewidth]{images/campus_map_block.png}
+        \caption{Original campus map with rectangular obstacles.}
+    \end{subfigure}
+    \caption{Mock campus world model. 1 pixel equals approximately 0.64m.}
+    \label{fig:mock_campus}
+\end{figure}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics{images/campus_serret_frenet.eps}
+    \caption{Path followed by Serret-Frenet controller.}
+    \label{fig:mock_campus_serret_frenet}
+\end{figure}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics{images/campus_tracking.eps}
+    \caption{Path followed by Tracking controller.}
+    \label{fig:mock_campus_tracking}
+\end{figure}
+
+Both controllers achieve, at face value, the tracking objective. We can only know for sure by verifying the tracking error. Figures \ref{fig:mock_campus_serret_frenet_error} and \ref{fig:mock_campus_tracking_error} illustrate the tracking error. The Serret-Frenet controller maintains an almost constant error that is negligible, since the path is planned such that the robot is already correctly configured on the path. This corroborates our knowledge that the Serret-Frenet controller treats the path as invariant. The tracking controller also achieves relatively good tracking, except at the path planning event points. This may occur because the path plan begins at the robot's position, instead of the lead point. Barring this issue, the tracking controller performs well. However, notice that we can achieve just as good tracking without the velocity control introduced by the tracking controller. Moreover, the tracking controller requires a great deal of tuning.
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics{images/campus_serret_frenet_error.eps}
+    \caption{Error (orthogonal only) in Serret-Frenet controller.}
+    \label{fig:mock_campus_serret_frenet_error}
+\end{figure}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics{images/campus_tracking_error.eps}
+    \caption{Error in Tracking controller.}
+    \label{fig:mock_campus_tracking_error}
+\end{figure}
 
 \backmatter
 \cleardoublepage

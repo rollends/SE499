@@ -416,6 +416,8 @@ Spline::Spline()
 
 Matrix<Spline::ValueType, 2, 2> Spline::frame(ValueType parameter, uint32_t derivative) const
 {
+    // Min ops, 89 froats
+
     Matrix<ValueType, 2, 2> basis;
     Matrix<ValueType, 2, 1> tangent = (*this)(parameter, 1);
     ValueType speed = tangent.norm();
@@ -429,13 +431,6 @@ Matrix<Spline::ValueType, 2, 2> Spline::frame(ValueType parameter, uint32_t deri
         basis.col(1) = basis.col(0).reverse();
         basis(0, 1) = -basis(0, 1);
     }
-/*
-    if(derivative == 1)
-    {
-        basis.col(0) = -basis.col(1);
-        basis.col(1) = tangent / speed;
-        return basis;
-    }*/
 
     if(derivative >= 1)
     {
