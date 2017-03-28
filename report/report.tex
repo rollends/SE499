@@ -35,7 +35,7 @@
 
 \frontmatter
 \section*{Acknowledgments}
-The author thanks Professor Christopher Nielsen for his guidance in developing the required intuition and mathematical tools for path following control design. Plots and simulations were partly written in Mathworks MATLAB under a student licence. Other simulations were written using C++ linked with the Boost library and Catch test framework.
+The author thanks Professor Christopher Nielsen for his guidance in developing the required intuition and mathematical tools for path following control design. Plots and simulations were partly written in Mathworks MATLAB under a student licence. Other simulations were written using C++ linked with the Boost library\cite{boost} and Catch test framework\cite{catch}.
 
 \begin{flushright}
 Rollen S. D'Souza\\
@@ -468,6 +468,7 @@ Now we prove the main result,
         \item $\sup_{\vec{\xi}\in\Omega}{\left|\xi_2\right|} = v$
     \end{enumerate}
     Let $g_2 < 0$. Then, there exists a Lyapunov function $V:\Omega\to\R$ and gain $g_1$ that satisfies the requirements of Theorem \ref{thm:lasalle} such that the dynamical system is guaranteed to converge to the path.
+    \label{thm:sf_stability}
 \end{theorem}
 \begin{proof}
     We use the method of undetermined coefficients over a quartic positive definite form. Let $V(\xi) = \xi_1^4 + a\xi_1^2\xi_2^2 + b\xi_2^4$. Choose $\Omega=\left\{\xi : V(\xi) = D\right\}$ for some $D\in\R$. Choose $b=Dv^{-4}$. Then,
@@ -491,14 +492,38 @@ Now we prove the main result,
 This result motivates a control design methodology for the Serret-Frenet controller. By choosing a maximum allowable orthogonal error $M$, the gain $g_1 = -(\frac{v}{M})^2$ is determined. Then overshoot requirements may be satisfied by choice in $g_2$. We choose to have critical damping, mandating $g_2 = -2\frac{v}{M}$. Observe that as $M\to 0$, that the gains are unbounded. This is as one would expect.
 
 \chapter{Planning}\label{sec:planning}
+Path planning involves the generation of waypoints and curves for the purpose of arriving at some goal region, $\mathcal{G}$. This paper only describes the Rapidly exploring Randomized Tree (RRT) algorithm. A majority of the investigation in planning occurred in the polynomial spline generation phase.
 
 \section{RRT}
+The Rapidly exploring Randomized Tree (RRT) algorithm is made up of the following steps \cite{Karaman11},
+\begin{enumerate}
+    \item Initialize tree $R=\{ x_0 \}$ with the initial point.
+    \item Randomly sample a candidate point $x \in \mathcal{T}$.\label{itm:rrt_sample}
+    \item Find the nearest point $x_n\in R$ to $x$.
+    \item Add an edge $(x_n, x)$ if the path between them is collision free.
+    \item If $x\in\mathcal{G}$ halt, otherwise repeat from (\ref{itm:rrt_sample}).
+\end{enumerate}
+The tree grows in a random fashion from the initial point, rapidly expanding in $\mathcal{T}$ until the goal can be reached. Once the algorithm completes, the programmer need only back-trace from the goal point towards the initial point; trees have a unique path from any node to the root. There are a few design decisions that can be made here in order to improve performance of the algorithm. One is to store obstacles in what is known as an R-Tree. R-Trees --- a tree whose name stems from rectangle, not rapidly nor randomized --- are a geometrical data structure that stores data according to their position in space. R-Tree creates bins that store objects with  bounding rectangles that are near one another. This data structure has an \emph{average} time complexity that is $\mathcal{O}(\log_2 N)$ for searching an element in the two dimensional case. As a result, it scales well even for large spatial domains where many obstacles may exist.
+
+One reason this algorithm was developed was to help developers effectively incorporate constraints on the generated path. Recall that the effectiveness of the transverse feedback linearization is related to the curvature of the path. The higher the curvature, the more sensitive the controller is to small errors. Moreover, it may be the case that Assumption \ref{ass:unique_operating} fails to hold. One way to easily restrict the curvature is to ensure the angle of edge $(x_n, x)$ doesn't deviate strongly from the angle of the line $(x_m, x_n)$. That is, the angle between any two successive edges is restricted to $\pi\pm\theta_{lim}$.
+
+Another approach attempted is to enforce a distance constraint that is related to the angle. Unfortunately, this does not work as well in practice, as it greatly reduces the exploration performance of RRT.
+
+RRT also does not by itself provide guarantees about the 'directness' of the path generated. This can changed by creating a bias towards sampling near $\mathcal{G}$\cite{LaValle06}\cite{Yang14}. We chose to randomly sample candidate points from a truncated-normal distribution centred about $\mathcal{G}$. The variance was chosen to ensure about 70-95\% of points are within the task space. This allowed for biased sampling that still allowed for exploration of the domain.
 
 \section{Polynomial Splining}
+Polynomial splining is a technique by which possibly distinct polynomials are stitched together to preserve a certain level of continuity at the stitch-points. Consider the polynomial $\sigma_i = \sum_{k=0}^N{\trans{(a_{ik},b_{ik})}\lambda^k}$. Normally we would like this polynomial to evaluate to the start and end points at $\lambda=0$ and $\lambda=1$ respectively. This clearly enforces a linear equality constraint. Continuity conditions are imposed on other polynomials that touch this polynomial, at the end points, by first enforcing that they evaluate to the same point at some other $\lambda$ (possibly the same value). Then derivatives are taken, as many as the order of continuity is required, and evaluated at the endpoints and set equal to one other. This results in a homogenous linear equation. This set of linear equations may be solved by any standard algorithm, such as LU decomposition.
 
-\subsection{Constrained Spline}
+In the case where there are fewer equations than unknowns, the system is under-determined. Although this can be solved using Gaussian elimination, it is preferred to use the Moore-Penrose pseudo-inverse (least squares) instead. This finds a solution that also minimizes the norm of the vector, in this case the vector of coefficients. This is important, as it means the curve shouldn't exhibit larger curvature than necessary.
+
+There is a problem with the above approach in the context of path planning. Since these polynomials are generated from waypoints generated by RRT, we know that the only guarantees we have about the waypoints are that the edges between them are collision free. There is no reason to think that the polynomial may not deviate from this edge, which it normally does, in a manner that may collide with an object. Of course, the easy way to deal with this is to test manually whether the polynomial intersects the object through a linear approximation of it. This is slow.
+
+Instead, we design a new methodology that attempts to fit the polynomial to the edges, instead of restricting the polynomial to the waypoints.
 
 \subsection{Loosely Constrained Spline}\label{sec:restrictpolyfit}
+Let $W$ be the set of waypoints and let the polynomial be defined as before. We would like to construct a polynomial that fits every point $W$ within an error $\delta$ while minimizing the deviation between it and the line between the waypoints. A simple way of performing this is to parameterize the edges with the same parameter as the polynomial, and construct a least squares matrix for these intermediate points. Conditions may be constructed in the form of $\sigma(\lambda) - w_i < \delta$ and $w_i - \sigma(\lambda) < \delta$. This form allows for the construction of a linear-inequality constrained least squares problem. This can be solved in MATLAB using \texttt{lsqlin}; any optimization algorithm that allows for constraints may perform well in this area.
+
+By allowing for this much freedom, the curve closely resembles the line and is unlikely to introduce collisions in the generated path. Of course, the path does deviate from the waypoint and this is the cost of this method. Further, the cost of the splining rises dramatically as a linear algebra problem is now an optimization problem.
 
 \chapter{Case Study}
 
@@ -610,6 +635,28 @@ Both controllers achieve, at face value, the tracking objective. We can only kno
     \caption{Error in Tracking controller.}
     \label{fig:mock_campus_tracking_error}
 \end{figure}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics{images/campus_sylvester_error.eps}
+    \caption{Error in Sylvester controller. Note the wild oscillations and relatively high magnitude error.}
+    \label{fig:mock_campus_sylvester}
+\end{figure}
+
+The reader may be wondering why the Sylvester controller was not tested in this benchmark. There are a few reasons for this:
+\begin{enumerate}
+    \item The control level set functions could not be optimized by the compiler (GCC).
+    \item The control signals generated were excessive.
+    \item Integration tolerances may not have been achievable.
+\end{enumerate}
+The orthogonal tracking error for the Sylvester controller, before the simulation stalled, is shown in Figure \ref{fig:mock_campus_sylvester}. The values are 37 orders of magnitude larger than in the Serret-Frenet controller (or, for that matter, any reasonable controller). The control signal generated is proportional to a value of the same order of magnitude, and so this controller is effectively rendered impractical.
+
+\section{Conclusions}
+A set of path following controllers were implemented in both MATLAB and C++ and verified in a relatively large scale mock example. A reformulation of the splining problem in terms of looser constraints was proposed. An analysis of the Serret-Frenet controller was performed, with the additional development a control design methodology that allows for a control engineer to design gains based on a-priori restrictions on the orthogonal tracking error.
+
+Theorem \ref{thm:sf_stability} does provoke a few interesting lines of research. Firstly, it motivates the use of a dynamic gain, that changes as the system evolves deeper into the invariant set. This approach may be able to speed convergence towards the path while ensuring the robot doesn't veer outside into the unknown domain. In addition to this, the Theorem seems to indicate that a design methodology may exist that incorporates conditions on $\xi_2$ as well! Restrictions on $\xi_2$ are effectively equivalent to preventing the robot from approaching too steeply towards the path. This may have applicability in domains where the robot cannot (and maybe even should not) make a bee-line towards the path for safety reasons. A simple example is a car which must switch from the slow lane to the fast lane on a wide highway. Even on an open road, it is safer for both passengers and other drivers to approach in a manner that reduces the turn rate.
+
+The Sylvester controller, though mathematically elegant, doesn't seem to be well suited for practical implementaion. In fact, my compiler couldn't optimize any of the Lie derivative and Level set functions for the Sylvester controller. Instead, the compiler hung. This and the fact that the Sylvester controller is expensive in terms of floating point operations, indicates a lack of practicality. Even in simulation, the Sylvester controller generated unreasonable control signals and linearized states. It is apparent that the Serret-Frenet controller is superior.
 
 \backmatter
 \cleardoublepage

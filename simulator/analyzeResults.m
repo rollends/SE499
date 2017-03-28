@@ -1,5 +1,5 @@
 %% Campus
-T = readtable('results_rrt_sfcontrol_campus.csv');
+T = readtable('results_rrt_sylvester_campus.csv');
 
 splineCount = max(T.spline_ind);
 rrtCount = max(T.plan_ind);

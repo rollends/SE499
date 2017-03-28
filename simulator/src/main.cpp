@@ -31,8 +31,9 @@ int main(int argc, char* argv[])
     const Vector2T goal(218, 600);
     const ValueType goalRadius = 5;
 
+    SylvesterController sfcontrol(robot, goal, goalRadius);
     //SerretFrenetController sfcontrol(robot, goal, goalRadius);
-    TrackingController sfcontrol(robot, goal, goalRadius);
+    //TrackingController sfcontrol(robot, goal, goalRadius);
     sfcontrol.printHeaders(std::cout) << std::endl;
 
     // Create World
