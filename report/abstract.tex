@@ -1,0 +1,24 @@
+\documentclass[11pt]{article}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Configuration
+%
+\input{packages.tex}
+\input{formatting.tex}
+\input{math_util.tex}
+
+\author{{Rollen S. D'Souza}\\
+        {Software Engineering Undergraduate}\\
+        {Department of Electrical \& Computer Engineering}\\
+        {\texttt{rs2dsouz@edu.uwaterloo.ca}}}
+\title{\textbf{SE499 Report --- Path Following Controllers}}
+\date{}
+
+
+\begin{document}
+
+\maketitle
+\begin{abstract}
+A commonly encountered task in mobile robotics is path planning and following. Robots need to plan a set of waypoints or a curve in space that arrives at an objective and then faithfully execute it. A number of well known planning algorithms exist in literature that effectively cover the task space in which the robot operates in. The space of path following, the control methodology to follow a plan involving non-linear paths to the destination, developed independently a set of techniques to ensure the robot converges towards the path and remains on it. One of these techniques is known as Transverse Feedback Linearization. This paper investigates two variants of this family of controllers, the Sylvester and Serret-Frenet controllers, and evaluates their feasibility in practice as it applies to a differential-drive kinematic model. It was found that the Sylvester methodology fails to scale well for large domains and is unlikely to execute well on embedded machines due to the computational effort required. In addition to this contribution, we develop a gain design methodology for the Serret-Frenet controller that permits a control engineer to design gains as a function of maximum permissible orthogonal tracking error. Future work may generalize the gain design technique to incorporate both orthogonal tracking error as well as a relative orientation constraint.
+\end{abstract}
+\end{document}

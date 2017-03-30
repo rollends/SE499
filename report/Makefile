@@ -1,4 +1,4 @@
-PROJECT = report.pdf
+PROJECT = report.pdf abstract.pdf
 TEMP    = tmp
 
 all: $(PROJECT)
@@ -15,6 +15,11 @@ clean:
 	cd $(TEMP) && makeindex $*.nlo -s nomencl.ist -o $*.nls
 	pdflatex -output-directory $(TEMP) $*.tex
 	biber --output_directory $(TEMP) $*.bcf
+	pdflatex -output-directory $(TEMP) $*.tex
+	cp $(TEMP)/$@ $@
+
+%.pdf: $(TEMP) %.tex
+	pdflatex -output-directory $(TEMP) $*.tex
 	pdflatex -output-directory $(TEMP) $*.tex
 	cp $(TEMP)/$@ $@
 
