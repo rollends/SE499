@@ -226,10 +226,10 @@ The Sylvester methodology relies on the theoretical developments of elimination 
 Take notice that there is no restriction on $\lambda$ in the assumption although work in this report does restrict the domain. Additionally, we need a result from linear algebra,
 
 \begin{theorem}
-    Given a system of $n$ homogeneous linear equations in $n$ unknowns, $\mat{A}\vec{x}=\vec{0}$, non-trivial solutions $\vec{x}\neq\vec{0}$ exist if and only if $\mdet\mat{A}=0$. \label{thm:kernel}
+    Given a system of $n$ homogeneous linear equations in $n$ unknowns, $\mat{A}\vec{x}=\vec{0}$, non-trivial solutions $\vec{x}\neq\vec{0}$ exist if and only if $\det\mat{A}=0$. \label{thm:kernel}
 \end{theorem}
 
-Notice that if we formulate a new system from Equation \ref{eqn:quintic} that is square and homogeneous, we will be able to eliminate $\vec{x}$ by instead considering when $\mdet\mat{A}=0$. This is otherwise known as finding the resultant\cite{Sederberg84}. Homogenizing the path requires treating $\vec{\sigma}_1$ and $\vec{\sigma}_2$ as constants $\vec{x}_1$ and $\vec{x}_2$, moving them into the polynomial matrix $\mat{P}$. We call this modified matrix $\mat{Q}$. With this modification, we need only construct a square system out of $\mat{Q}$. In order to construct a square linear system, we consider multiplying both polynomials in the first and second component of $\vec{\sigma}$ by increasing powers of $\lambda$ until we have generated a sufficient number of equations. For two quintics, we must multiply the polynomials by powers of $\lambda$ up til $\lambda^5$, arriving at Equation \ref{eqn:inhomog_poly}.
+Notice that if we formulate a new system from Equation \ref{eqn:quintic} that is square and homogeneous, we will be able to eliminate $\vec{x}$ by instead considering when $\det\mat{A}=0$. This is otherwise known as finding the resultant\cite{Sederberg84}. Homogenizing the path requires treating $\vec{\sigma}_1$ and $\vec{\sigma}_2$ as constants $\vec{x}_1$ and $\vec{x}_2$, moving them into the polynomial matrix $\mat{P}$. We call this modified matrix $\mat{Q}$. With this modification, we need only construct a square system out of $\mat{Q}$. In order to construct a square linear system, we consider multiplying both polynomials in the first and second component of $\vec{\sigma}$ by increasing powers of $\lambda$ until we have generated a sufficient number of equations. For two quintics, we must multiply the polynomials by powers of $\lambda$ up til $\lambda^5$, arriving at Equation \ref{eqn:inhomog_poly}.
 
 \begin{equation}
     \begin{bmatrix}
@@ -267,7 +267,7 @@ Notice that if we formulate a new system from Equation \ref{eqn:quintic} that is
     \label{eqn:inhomog_poly}
 \end{equation}
 
-Carefully note that the tail of $\mat{Q}_{1:}$ and $\mat{Q}_{2:}$ contain a linear term in $\vec{x}_1$ and $\vec{x}_2$ respectively. Therefore if the matrix has a non-trivial kernel, i.e. its determinant vanishes as per Theorem \ref{thm:kernel}, both $\vec{x}_1$ and $\vec{x}_2$ satisfy the polynomial equations. This motivates the definition of the zero level set, $s(\vec{x}_1, \vec{x}_2) = \det~S$. The method assumes the matrix $\mat{S}$ does not have a trivially vanishing determinant such as if the leading coefficients of both polynomials $\vec{\sigma}_1$ and $\vec{\sigma}_2$ are equal. In that case, extensions to the method exist that allow for the factoring of these terms\cite{Sederberg84}.
+Carefully note that the tail of $\mat{Q}_{1:}$ and $\mat{Q}_{2:}$ contain a linear term in $\vec{x}_1$ and $\vec{x}_2$ respectively. Therefore if the matrix has a non-trivial kernel, i.e. its determinant vanishes as per Theorem \ref{thm:kernel}, both $\vec{x}_1$ and $\vec{x}_2$ satisfy the polynomial equations. This motivates the definition of the zero level set, $s(\vec{x}_1, \vec{x}_2) = \det\mat{S}$. The method assumes the matrix $\mat{S}$ does not have a trivially vanishing determinant such as if the leading coefficients of both polynomials $\vec{\sigma}_1$ and $\vec{\sigma}_2$ are equal. In that case, extensions to the method exist that allow for the factoring of these terms\cite{Sederberg84}.
 
 Now we can define $\vec{\xi}_1$, the distance from the robot to the path, as the level set function $\vec{\xi}_1 = (s\circ \vec{h})(\vec{x})$. Observe that $\vec{\xi}_1$ is only dependent on $\vec{x}_1$ and $\vec{x}_2$. Define $\vec{\xi}_2 = \dot{\vec{\xi}}_1 = \nabla_{(\vec{x}_1, \vec{x}_2)}s~\mat{H}\vec{f}(\vec{x})$. To complete the control system, we must differentiate $\vec{\xi}_2$ in time. We expect Equation \ref{eqn:tfl_dynamics} to emerge.
 \begin{align*}
@@ -387,11 +387,11 @@ This result completes the dynamical system and allows for the construction of th
                     +
                     \trans{\vec{e}_2}\mat{H}\frac{\partial\vec{f}}{\partial\vec{x}}\vec{g} u\\
                 &=
-                    -\left(v^2 - \xi_2^2\right) \frac{\trans{\vec{e}_2}\vec{\sigma}''(\lambda)}{\trans{\vec{\sigma}'(\lambda)}\vec{\sigma}'(\lambda_*)}
+                    -\left(v^2 - \vec{\xi}_2^2\right) \frac{\trans{\vec{e}_2}\vec{\sigma}''(\lambda)}{\trans{\vec{\sigma}'(\lambda)}\vec{\sigma}'(\lambda_*)}
                     +
                     \trans{\vec{e}_2}\mat{H}\frac{\partial\vec{f}}{\partial\vec{x}}\vec{g} u\\
                 &=
-                    -\left(v^2 - \xi_2^2\right) \frac{\trans{\vec{e}_2}\vec{\sigma}''(\lambda)}{\trans{\vec{\sigma}'(\lambda)}\vec{\sigma}'(\lambda_*)}
+                    -\left(v^2 - \vec{\xi}_2^2\right) \frac{\trans{\vec{e}_2}\vec{\sigma}''(\lambda)}{\trans{\vec{\sigma}'(\lambda)}\vec{\sigma}'(\lambda_*)}
                     +
                     \trans{\vec{e}_2}
                         \begin{bmatrix}
@@ -400,7 +400,7 @@ This result completes the dynamical system and allows for the construction of th
                         \end{bmatrix}
                     u\\
                 &=
-                    -\left(v^2 - \xi_2^2\right) \frac{\trans{\vec{e}_2}\vec{\sigma}''(\lambda)}{\trans{\vec{\sigma}'(\lambda)}\vec{\sigma}'(\lambda_*)}
+                    -\left(v^2 - \vec{\xi}_2^2\right) \frac{\trans{\vec{e}_2}\vec{\sigma}''(\lambda)}{\trans{\vec{\sigma}'(\lambda)}\vec{\sigma}'(\lambda_*)}
                     +
                     \trans{\vec{e}_2}\Rot{\frac{\pi}{2}}
                         \begin{bmatrix}
@@ -409,23 +409,23 @@ This result completes the dynamical system and allows for the construction of th
                         \end{bmatrix}
                     u\\
                 &=
-                    -\left(v^2 - \xi_2^2\right) \frac{\trans{\vec{e}_2}\vec{\sigma}''(\lambda)}{\trans{\vec{\sigma}'(\lambda)}\vec{\sigma}'(\lambda_*)}
+                    -\left(v^2 - \vec{\xi}_2^2\right) \frac{\trans{\vec{e}_2}\vec{\sigma}''(\lambda)}{\trans{\vec{\sigma}'(\lambda)}\vec{\sigma}'(\lambda_*)}
                     +
                     \trans{\vec{e}_2}\Rot{\frac{\pi}{2}}\vec{H}\vec{f}(\vec{x}) u\\
                 &=
-                    -\left(v^2 - \xi_2^2\right) \frac{\trans{\vec{e}_2}\vec{\sigma}''(\lambda)}{\trans{\vec{\sigma}'(\lambda)}\vec{\sigma}'(\lambda_*)}
+                    -\left(v^2 - \vec{\xi}_2^2\right) \frac{\trans{\vec{e}_2}\vec{\sigma}''(\lambda)}{\trans{\vec{\sigma}'(\lambda)}\vec{\sigma}'(\lambda_*)}
                     +
                     \trans{\left(\Rot{-\frac{\pi}{2}}\vec{e}_2\right)}\vec{H}\vec{f}(\vec{x}) u\\
                 &=
-                    -\left(v^2 - \xi_2^2\right) \frac{\trans{\vec{e}_2}\vec{\sigma}''(\lambda)}{\trans{\vec{\sigma}'(\lambda)}\vec{\sigma}'(\lambda_*)}
+                    -\left(v^2 - \vec{\xi}_2^2\right) \frac{\trans{\vec{e}_2}\vec{\sigma}''(\lambda)}{\trans{\vec{\sigma}'(\lambda)}\vec{\sigma}'(\lambda_*)}
                     +
                     \trans{\vec{e}_1}\mat{H}\vec{f}(\vec{x}) u\\
                 &=
-                    -\left(v^2 - \xi_2^2\right) \frac{\trans{\vec{e}_2}\vec{\sigma}''(\lambda)}{\trans{\vec{\sigma}'(\lambda)}\vec{\sigma}'(\lambda_*)}
+                    -\left(v^2 - \vec{\xi}_2^2\right) \frac{\trans{\vec{e}_2}\vec{\sigma}''(\lambda)}{\trans{\vec{\sigma}'(\lambda)}\vec{\sigma}'(\lambda_*)}
                     +
-                    u \sqrt{v^2 - \xi_2^2}\\
+                    u \sqrt{v^2 - \vec{\xi}_2^2}\\
 \end{align*}
-Further simplification is not necessary as it is clear that $\left|\xi_2\right|$ must never equal $v$. Intuitively this means that the robot's speed must not be completely represented in the orthogonal direction -- towards the path. This concern motivates an analysis on whether stability may be guaranteed within a bounded volume that does not intersect the $\left|\xi_2\right|=v$ isoclines.
+Further simplification is not necessary as it is clear that $\left|\vec{\xi}_2\right|$ must never equal $v$. Intuitively this means that the robot's speed must not be completely represented in the orthogonal direction -- towards the path. This concern motivates an analysis on whether stability may be guaranteed within a bounded volume that does not intersect the $\left|\vec{\xi}_2\right|=v$ isoclines.
 
 \subsubsection{Stability Analysis and Control Design}
 The final control system, with proportional linear feedback, is
@@ -439,11 +439,11 @@ The final control system, with proportional linear feedback, is
 \end{equation}
 We begin with a necessary result from Dynamical System Theory.
 \begin{theorem}[(General) Lyapunov's Method]
-    Let $\vec{\xi}_*$ be an equilibrium point of Equation \ref{eqn:tfl_linear}, $\Omega\subset\R^2$ be an open set containing $\xi_*$, and $V:\Omega\to\R$ be continuously differentiable such that
+    Let $\vec{\xi}_*$ be an equilibrium point of Equation \ref{eqn:tfl_linear}, $\Omega\subset\R^2$ be an open set containing $\vec{\xi}_*$, and $V:\Omega\to\R$ be continuously differentiable such that
     \begin{enumerate}
         \item $V(\vec{\xi}_*) = 0, V(\vec{\xi}) > 0 \Leftrightarrow \vec{\xi}\neq\vec{\xi}_*$
         \item $\dot{V}(\vec{\xi})\leq 0, \vec{\xi}\in\Omega$
-        \item The set $E = \left\{ \xi \in \Omega : \dot(V(\vec{\xi})) = 0 \right\}$ does not contain any whole orbits except $\vec{\xi}_*$ (LaSalle's Invariance Principle)
+        \item The set $E = \left\{ \vec{\xi} \in \Omega : \dot{V}(\vec{\xi}) = 0 \right\}$ does not contain any whole orbits except $\vec{\xi}_*$ (LaSalle's Invariance Principle)
     \end{enumerate}
     Then all orbits in $\Omega$ asymptotically converge to $\vec{\xi}_*$.
     \label{thm:lasalle}
@@ -455,30 +455,30 @@ Now we prove the main result,
 \begin{theorem}[Arbitrarily Bounded Stability of Serret Frenet Control]
     For any $M\in\R$ and $M>0$, an $\Omega$ may be constructed such that,
     \begin{enumerate}
-        \item $\sup_{\vec{\xi}\in\Omega}{\left|\xi_1\right|} = M$
-        \item $\sup_{\vec{\xi}\in\Omega}{\left|\xi_2\right|} = v$
+        \item $\sup_{\vec{\xi}\in\Omega}{\left|\vec{\xi}_1\right|} = M$
+        \item $\sup_{\vec{\xi}\in\Omega}{\left|\vec{\xi}_2\right|} = v$
     \end{enumerate}
     Let $g_2 < 0$. Then, there exists a Lyapunov function $V:\Omega\to\R$ and gain $g_1$ that satisfies the requirements of Theorem \ref{thm:lasalle} such that the dynamical system is guaranteed to converge to the path.
     \label{thm:sf_stability}
 \end{theorem}
 \begin{proof}
-    We use the method of undetermined coefficients over a quartic positive definite form. Let $V(\xi) = \xi_1^4 + a\xi_1^2\xi_2^2 + b\xi_2^4$. Choose $\Omega=\left\{\xi : V(\xi) = D\right\}$ for some $D\in\R$. Choose $b=Dv^{-4}$. Then,
+    We use the method of undetermined coefficients over a quartic positive definite form. Let $V(\vec{\xi}) = \vec{\xi}_1^4 + a\vec{\xi}_1^2\vec{\xi}_2^2 + b\vec{\xi}_2^4$. Choose $\Omega=\left\{\vec{\xi} : V(\vec{\xi}) = D\right\}$ for some $D\in\R$. Choose $b=Dv^{-4}$. Then,
     \begin{align*}
-        \dot{V} &=  4\xi_1^3\dot{\xi}_1 + 2a\left[\xi_1\dot{\xi}_1\xi_2^2 + \xi_1^2\xi_2\dot{\xi}_2\right] + 4b\xi_2^3\dot{\xi}_2\\
-                &=  4\xi_1^3\xi_2 + 2a\left[\xi_1\xi_2^3 + g_1\xi_1^3\xi_2 + g_2\xi_1^2\xi_2^2\right] + 4bg_1\xi_1\xi_2^3 + 4bg_2\xi_2^4\\
-                &=  \left(4+2ag_1\right)\xi_1^3\xi_2 + 2\left(a + 2bg_1\right)\xi_1\xi_2^3 + \left(2a\xi_1^2\xi_2^2 + 4b\xi_2^4\right)g_2\\
-                &=  \left(4+2ag_1\right)\xi_1^3\xi_2 + 2\left(a + 2Dv^{-4}g_1\right)\xi_1\xi_2^3 + \left(2a\xi_1^2\xi_2^2 + 4Dvd^{-4}\xi_2^4\right)g_2\\
+        \dot{V} &=  4\vec{\xi}_1^3\dot{\vec{\xi}}_1 + 2a\left[\vec{\xi}_1\dot{\vec{\xi}}_1\vec{\xi}_2^2 + \vec{\xi}_1^2\vec{\xi}_2\dot{\vec{\xi}}_2\right] + 4b\vec{\xi}_2^3\dot{\vec{\xi}}_2\\
+                &=  4\vec{\xi}_1^3\vec{\xi}_2 + 2a\left[\vec{\xi}_1\vec{\xi}_2^3 + g_1\vec{\xi}_1^3\vec{\xi}_2 + g_2\vec{\xi}_1^2\vec{\xi}_2^2\right] + 4bg_1\vec{\xi}_1\vec{\xi}_2^3 + 4bg_2\vec{\xi}_2^4\\
+                &=  \left(4+2ag_1\right)\vec{\xi}_1^3\vec{\xi}_2 + 2\left(a + 2bg_1\right)\vec{\xi}_1\vec{\xi}_2^3 + \left(2a\vec{\xi}_1^2\vec{\xi}_2^2 + 4b\vec{\xi}_2^4\right)g_2\\
+                &=  \left(4+2ag_1\right)\vec{\xi}_1^3\vec{\xi}_2 + 2\left(a + 2Dv^{-4}g_1\right)\vec{\xi}_1\vec{\xi}_2^3 + \left(2a\vec{\xi}_1^2\vec{\xi}_2^2 + 4Dvd^{-4}\vec{\xi}_2^4\right)g_2\\
     \end{align*}
     Impose the requirement that cross-terms vanish identically. This gives restrictions on $a$ and $g_1$.
     \begin{align*}
         g_1 &= -\frac{v^2}{\sqrt{D}}\\
         a &= 2\frac{\sqrt{D}}{v^2}
     \end{align*}
-    This pair uniquely defines $V$ as $V(\xi) = \xi_1^4 + 2\frac{\sqrt{D}}{v^2}\xi_1^2\xi_2^2 + \frac{D}{v^4}\xi_2^4$. Interestingly, this is actually the square of a quadratic form. Specifically,
+    This pair uniquely defines $V$ as $V(\vec{\xi}) = \vec{\xi}_1^4 + 2\frac{\sqrt{D}}{v^2}\vec{\xi}_1^2\vec{\xi}_2^2 + \frac{D}{v^4}\vec{\xi}_2^4$. Interestingly, this is actually the square of a quadratic form. Specifically,
     $$
-        V(\xi) = \left[\xi_1^2 + \left(\frac{\sqrt{D}}{v^2}\right)\xi_2^2 \right]^2
+        V(\vec{\xi}) = \left[\vec{\xi}_1^2 + \left(\frac{\sqrt{D}}{v^2}\right)\vec{\xi}_2^2 \right]^2
     $$
-    We can now see that the conditions on $\Omega$ are in fact observed with $D = M^4$. However, we still need to prove asymptotic stability. We now know that $\dot{V} = \left(2a\xi_1^2\xi_2^2 + 4Dv^{-4}\xi_2^4\right)g_2$. This function is zero on the $\xi_2=0$ axis. However, we note that since $g_1 \neq 0$, there are no equilibria on this axis. More importantly, no other whole orbits exist on this axis except for the equilibrium point, $\xi=\vec{0}$. By Theorem \ref{thm:lasalle}, the system is asymptotically stable as required.
+    We can now see that the conditions on $\Omega$ are in fact observed with $D = M^4$. However, we still need to prove asymptotic stability. We now know that $\dot{V} = \left(2a\vec{\xi}_1^2\vec{\xi}_2^2 + 4Dv^{-4}\vec{\xi}_2^4\right)g_2$. This function is zero on the $\vec{\xi}_2=0$ axis. However, we note that since $g_1 \neq 0$, there are no equilibria on this axis. More importantly, no other whole orbits exist on this axis except for the equilibrium point, $\vec{\xi}=\vec{0}$. By Theorem \ref{thm:lasalle}, the system is asymptotically stable as required.
 \end{proof}
 This result motivates a control design methodology for the Serret-Frenet controller. By choosing a maximum allowable orthogonal error $M$, the gain $g_1 = -(\frac{v}{M})^2$ is determined. Then overshoot requirements may be satisfied by choice in $g_2$. We choose to have critical damping, mandating $g_2 = -2\frac{v}{M}$. Observe that as $M\to 0$, that the gains are unbounded. This is as one would expect.
 
@@ -488,11 +488,11 @@ Path planning involves the generation of waypoints and curves for the purpose of
 \section{RRT}
 The Rapidly exploring Randomized Tree (RRT) algorithm is made up of the following steps \cite{Karaman11},
 \begin{enumerate}
-    \item Initialize tree $R=\{ x_0 \}$ with the initial point.
-    \item Randomly sample a candidate point $x \in \mathcal{T}$.\label{itm:rrt_sample}
-    \item Find the nearest point $x_n\in R$ to $x$.
-    \item Add an edge $(x_n, x)$ if the path between them is collision free.
-    \item If $x\in\mathcal{G}$ halt, otherwise repeat from (\ref{itm:rrt_sample}).
+    \item Initialize tree $R=\{ \vec{x}_0 \}$ with the initial point.
+    \item Randomly sample a candidate point $\vec{x} \in \mathcal{T}$.\label{itm:rrt_sample}
+    \item Find the nearest point $\vec{x}_n\in R$ to $x$.
+    \item Add an edge $(\vec{x}_n, \vec{x})$ if the path between them is collision free.
+    \item If $\vec{x}\in\mathcal{G}$ halt, otherwise repeat from (\ref{itm:rrt_sample}).
 \end{enumerate}
 The tree grows in a random fashion from the initial point, rapidly expanding in $\mathcal{T}$ until the goal can be reached. Once the algorithm completes, the programmer need only back-trace from the goal point towards the initial point; trees have a unique path from any node to the root. There are a few design decisions that can be made here in order to improve performance of the algorithm. One is to store obstacles in what is known as an R-Tree. R-Trees --- a tree whose name stems from rectangle, not rapidly nor randomized --- are a geometrical data structure that stores data according to their position in space. R-Tree creates bins that store objects with  bounding rectangles that are near one another. This data structure has an \emph{average} time complexity that is $\mathcal{O}(\log_2 N)$ for searching an element in the two dimensional case. As a result, it scales well even for large spatial domains where many obstacles may exist.
 
@@ -503,7 +503,7 @@ Another approach attempted is to enforce a distance constraint that is related t
 RRT also does not by itself provide guarantees about the 'directness' of the path generated. This can changed by creating a bias towards sampling near $\mathcal{G}$\cite{LaValle06}\cite{Yang14}. We chose to randomly sample candidate points from a truncated-normal distribution centred about $\mathcal{G}$. The variance was chosen to ensure about 70-95\% of points are within the task space. This allowed for biased sampling that still properly explored the domain.
 
 \section{Polynomial Splining}
-Polynomial splining is a technique by which possibly distinct polynomials are stitched together to preserve a certain level of continuity at the stitch-points. Consider the polynomial $\sigma_i = \sum_{k=0}^N{\trans{(a_{ik},b_{ik})}\lambda^k}$. Normally we would like this polynomial to evaluate to the start and end points at $\lambda=0$ and $\lambda=1$ respectively. This clearly enforces a linear equality constraint. Continuity conditions are imposed on other polynomials that touch this polynomial, at the end points, by first enforcing that they evaluate to the same point at some other $\lambda$ (possibly the same value). Then derivatives are taken, as many as the order of continuity is required, and evaluated at the endpoints and set equal to one other. This results in a homogeneous linear equation. This set of linear equations may be solved by any standard algorithm, such as LU decomposition.
+Polynomial splining is a technique by which possibly distinct polynomials are stitched together to preserve a certain level of continuity at the stitch-points. Consider the polynomial $\vec{\sigma}_i = \sum_{k=0}^N{\trans{(a_{ik},b_{ik})}\lambda^k}$. Normally we would like this polynomial to evaluate to the start and end points at $\lambda=0$ and $\lambda=1$ respectively. This clearly enforces a linear equality constraint. Continuity conditions are imposed on other polynomials that touch this polynomial, at the end points, by first enforcing that they evaluate to the same point at some other $\lambda$ (possibly the same value). Then derivatives are taken, as many as the order of continuity is required, and evaluated at the endpoints and set equal to one other. This results in a homogeneous linear equation. This set of linear equations may be solved by any standard algorithm, such as LU decomposition.
 
 In the case where there are fewer equations than unknowns, the system is under-determined. Although this can be solved using Gaussian elimination, it is preferred to use the Moore-Penrose pseudo-inverse (least squares) instead. This finds a solution that also minimizes the norm of the vector, in this case the vector of coefficients. This is important, as it means the curve shouldn't exhibit larger curvature than necessary.
 
@@ -512,7 +512,7 @@ There is a problem with the above approach in the context of path planning. Sinc
 Instead, we design a new methodology that attempts to fit the polynomial to the edges, instead of restricting the polynomial to the waypoints.
 
 \subsection{Loosely Constrained Spline}\label{sec:restrictpolyfit}
-Let $W$ be the set of waypoints and let the polynomial be defined as before. We would like to construct a polynomial that fits every point $W$ within an error $\delta$ while minimizing the deviation between it and the edge between waypoints. A simple way of performing this is to parameterize the edges with the same parameter as the polynomial, and construct a least squares matrix for these intermediate points. Conditions may be constructed in the form of $\sigma(\lambda) - w_i < \delta$ and $w_i - \sigma(\lambda) < \delta$. This form allows for the construction of a linear-inequality constrained least squares problem. This can be solved in MATLAB using \texttt{lsqlin}; any optimization algorithm that allows for constraints may perform well in this area.
+Let $W$ be the set of waypoints and let the polynomial be defined as before. We would like to construct a polynomial that fits every point $W$ within an error $\delta$ while minimizing the deviation between it and the edge between waypoints. A simple way of performing this is to parameterize the edges with the same parameter as the polynomial, and construct a least squares matrix for these intermediate points. Conditions may be constructed in the form of $\vec{\sigma}(\lambda) - w_i < \delta$ and $w_i - \vec{\sigma}(\lambda) < \delta$. This form allows for the construction of a linear-inequality constrained least squares problem. This can be solved in MATLAB using \texttt{lsqlin}; any optimization algorithm that allows for constraints may perform well in this area.
 
 By permitting this freedom, the curve closely follows the edges of RRT and is unlikely to introduce collisions in the generated path. Of course, the path does deviate from the waypoint indicated a trade-off in this method. Further, the cost of the splining rises dramatically as a linear algebra problem is now converted into an optimization problem.
 
@@ -527,7 +527,7 @@ An initial performance comparison on the controllers was performed in MATLAB wit
     \label{fig:track}
 \end{figure}
 
-The Serret-Frenet and Sylvester controllers should exhibit exponential convergence to the path; the gains are chosen so as to guarantee exponential stability in $\xi$. Gains are chosen to ensure the Serret-Frenet controller doesn't exceed an orthogonal tracking error of $0.1$. The Sylvester approach uses the exact same gains to provide a fair comparison. Figure \ref{fig:tfl_compare_task} shows the resulting path of both robots in a situation where they are on the path but not facing in the right direction --- the robots start with a heading error of over 45 degrees. Notice that both methodologies converge and remain on the path no matter the behaviour of the curve.
+The Serret-Frenet and Sylvester controllers should exhibit exponential convergence to the path; the gains are chosen so as to guarantee exponential stability in $\vec{\xi}$. Gains are chosen to ensure the Serret-Frenet controller doesn't exceed an orthogonal tracking error of $0.1$. The Sylvester approach uses the exact same gains to provide a fair comparison. Figure \ref{fig:tfl_compare_task} shows the resulting path of both robots in a situation where they are on the path but not facing in the right direction --- the robots start with a heading error of over 45 degrees. Notice that both methodologies converge and remain on the path no matter the behaviour of the curve.
 
 \begin{figure}[!htbp]
     \centering
@@ -550,11 +550,11 @@ Figure \ref{fig:tfl_compare_state} evaporates any such deduction. The Sylvester 
 \begin{figure}[!htbp]
     \centering
     \includegraphics{images/tfl_compare_state.eps}
-    \caption{The linearized state $\xi$ for both controllers. Take careful note of the scale of the axes!}
+    \caption{The linearized state $\vec{\xi}$ for both controllers. Take careful note of the scale of the axes!}
     \label{fig:tfl_compare_state}
 \end{figure}
 
-This isn't the only dimension where the Sylvester controller falls short. Table \ref{tab:perf_simple} collates the time-cost of executing the control-generation functions for both controllers, measured in MATLAB. The gradient descent algorithm is included so as to provide a useful baseline of performance. Notice that the gradient descent is the dominating cost in the Serret-Frenet controller. The Sylvester controller, on the other hand, performs poorly. In fact, data --- not shown here --- indicates that 62\% of the time is spent just calculating the $\xi$ state vector. Any implementation of the Sylvester controller can perform, at best, around 30 steps per second. The reader would like to take note that the machine used for benchmarking uses an Intel processor running at 2.50GHz. An embedded processor is unlikely to effectively execute the Sylvester controller. Unfortunately, these are timing benchmarks and are, as a result, not easily transferable to other hardware. An analysis of floating point operations is required.
+This isn't the only dimension where the Sylvester controller falls short. Table \ref{tab:perf_simple} collates the time-cost of executing the control-generation functions for both controllers, measured in MATLAB. The gradient descent algorithm is included so as to provide a useful baseline of performance. Notice that the gradient descent is the dominating cost in the Serret-Frenet controller. The Sylvester controller, on the other hand, performs poorly. In fact, data --- not shown here --- indicates that 62\% of the time is spent just calculating the $\vec{\xi}$ state vector. Any implementation of the Sylvester controller can perform, at best, around 30 steps per second. The reader would like to take note that the machine used for benchmarking uses an Intel processor running at 2.50GHz. An embedded processor is unlikely to effectively execute the Sylvester controller. Unfortunately, these are timing benchmarks and are, as a result, not easily transferable to other hardware. An analysis of floating point operations is required.
 \begin{table}[!htbp]
     \centering
     \begin{tabular}{l|c|c|c}
@@ -645,7 +645,7 @@ The orthogonal tracking error for the Sylvester controller, before the simulatio
 \section{Conclusions}
 A set of path following controllers were implemented in both MATLAB and C++ and verified in a relatively large scale mock example. A reformulation of the splining problem in terms of looser constraints was proposed. An analysis of the Serret-Frenet controller was performed, with the additional development a control design methodology that allows for a control engineer to design gains based on a-priori restrictions on the orthogonal tracking error.
 
-Theorem \ref{thm:sf_stability} does provoke a few interesting lines of research. Firstly, it motivates the use of a dynamic gain, that changes as the system evolves deeper into the invariant set. This approach may be able to speed convergence towards the path while ensuring the robot doesn't veer outside into the unknown domain. In addition to this, the Theorem seems to indicate that a design methodology may exist that incorporates conditions on $\xi_2$ as well! Restrictions on $\xi_2$ are effectively equivalent to preventing the robot from approaching too steeply towards the path. This may have applicability in domains where the robot cannot (and maybe even should not) make a bee-line towards the path for safety reasons. A simple example is a car which must switch from the slow lane to the fast lane on a wide highway. Even on an open road, it is safer for both passengers and other drivers to approach in a manner that reduces the turn rate.
+Theorem \ref{thm:sf_stability} does provoke a few interesting lines of research. Firstly, it motivates the use of a dynamic gain, that changes as the system evolves deeper into the invariant set. This approach may be able to speed convergence towards the path while ensuring the robot doesn't veer outside into the unknown domain. In addition to this, the Theorem seems to indicate that a design methodology may exist that incorporates conditions on $\vec{\xi}_2$ as well! Restrictions on $\vec{\xi}_2$ are effectively equivalent to preventing the robot from approaching too steeply towards the path. This may have applicability in domains where the robot cannot (and maybe even should not) make a bee-line towards the path for safety reasons. A simple example is a car which must switch from the slow lane to the fast lane on a wide highway. Even on an open road, it is safer for both passengers and other drivers to approach in a manner that reduces the turn rate.
 
 The Sylvester controller, though mathematically elegant, doesn't seem to be well suited for practical implementation. In fact, my compiler couldn't optimize any of the Lie derivative and Level set functions for the Sylvester controller. Instead, the compiler hung. This and the fact that the Sylvester controller is expensive in terms of floating point operations, indicates a lack of practicality. Even in simulation, the Sylvester controller generated unreasonable control signals and linearized states. It is apparent that the Serret-Frenet controller is superior.
 
