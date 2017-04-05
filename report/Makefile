@@ -1,4 +1,4 @@
-PROJECT = report.pdf abstract.pdf
+PROJECT = report.pdf abstract.pdf report_se499.pdf
 TEMP    = tmp
 
 all: $(PROJECT)

@@ -5,13 +5,21 @@
 \renewcommand{\vec}[1]{\bm{#1}}
 \newcommand{\mat}[1]{\mathbf{#1}}
 \newcommand{\trans}[1]{{#1}^{\intercal}}
-\newcommand{\enorm}[1]{\left\|#1\right\|_2}
-\newcommand{\mdet}{\text{det}}
+\newcommand{\enorm}[1]{\mathop{}\!\left\|#1\right\|_2}
+\newcommand{\inorm}[1]{\mathop{}\!\left\|#1\right\|_\infty}
+\newcommand{\mdet}{\det}
+\newcommand{\defineas}{\coloneqq}
+\newcommand{\rdefineas}{\eqqcolon}
+\newcommand{\jac}[1]{\mathop{}\!J_{#1}}
+\newcommand{\der}[1]{\mathop{}\!\mathrm{d}_{#1}}
 
 \newcommand{\lie}[1]{\mathcal{L}_{#1}}
 
+\newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
+
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}[theorem]{Definition}
 \newtheorem{corollary}[theorem]{Corollary}
 \newtheorem{proposition}[theorem]{Proposition}
 \newtheorem{assumption}[theorem]{Assumption}

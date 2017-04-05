@@ -7,7 +7,6 @@ rrtCount = max(T.plan_ind);
 Map = imread('../report/images/campus_map.PNG');
 Map = Map(end:-1:1,:,:) * 1.75;
 
-
 figure;
 colormap lines;
 image('CData', Map); hold on;
@@ -30,32 +29,12 @@ legend([figBot, figTransfer], 'Robot Path', 'RRT (planning) Events');
 title('Robot World'); hold off;
 
 figure(2);
-plot(T.time, T.xi_1); 
-ylabel('Error in xi_1');
-title('Orthogonal Tracking Error');
-% hold on;
-% yyaxis right;
-% plot(T.time, T.delta_xi_2);
-% ylabel('Error in xi_2');
+plot(T.time, -sqrt(10) * T.xi_1 - T.xi_2 * 2 * (10^0.25)); 
+ylabel('u');
+title('Control Effort');
 xlabel('Time (s)');
 hold off;
 
-% figure(3);
-% for p = 1:rrtCount
-%     transferPoints = (T.plan_ind == p);
-%     plot(T.xi_1(transferPoints), T.xi_2(transferPoints), '--'); hold on;
-% end
-% D = 0.1^4;
-% v = 1;
-% b = D/(v^4);
-% a = 2*sqrt(D) / (v^2);
-% k = v^2 / D^0.25;
-% V = @(x,y) x.^4 + a*(x.^2).*(y.^2) + b * y.^4 - D;
-% fimplicit(V);
-% title('Linearized State');
-% xlabel('xi_1');
-% ylabel('xi_2');
-% hold off;
 
 %% Campus for Tracking Controller
 T = readtable('results_rrt_trackcontrol_campus_mod.csv');

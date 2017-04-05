@@ -60,7 +60,7 @@ classdef TrackingRobot < handle
             
             ya = x(1:2) + l * tau;
             
-            if abs(obj.eta - 1) < 1e-3
+            if abs(t - 1) < 1e-3
                 % Reached end point...don't bother integrating.
                 dx = 0 * x;
                 return;

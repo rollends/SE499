@@ -7,6 +7,7 @@ classdef(Abstract) SpliningRobot < handle
         t       = 0;
         x       = zeros(3, 1);
         poly    = zeros(2, 1);
+        u       = 0;
         
         eta     = zeros(1, 1);
         xi      = zeros(2, 1);
@@ -14,13 +15,15 @@ classdef(Abstract) SpliningRobot < handle
         lieFF   = 0;
         lieGF   = 0;
         
-        gain    = [-1, -sqrt(3)];
+        gain    = [-1/0.1^2, -sqrt(2) / 0.1];
+        s       = zeros(2, 1);
         
         solveT  = [];
         solveXi = [];
         solveEta= [];
         solveX  = [];
         solveS  = [];
+        solveU  = [];
     end
 
     properties(Access = private)
@@ -52,6 +55,7 @@ classdef(Abstract) SpliningRobot < handle
             
             % Find closest point
             obj.eta = obj.findClosestPoint();
+            obj.s = vpolyval(obj.poly, obj.eta);
             
             if abs(obj.eta - 1) < 1e-3
                 % Reached end point...don't bother integrating.
@@ -71,12 +75,13 @@ classdef(Abstract) SpliningRobot < handle
             
             % Evaluate flow of system
             v = obj.linearController();
-            u = (v - obj.lieFF) / obj.lieGF;
-            dx = f + g * u;
+            obj.u = (v - obj.lieFF) / obj.lieGF;
+            dx = f + g * obj.u;
             
             % Save solution
             obj.storeDataRow();
         end
+
     end
     
     methods(Access = protected)
@@ -112,11 +117,34 @@ classdef(Abstract) SpliningRobot < handle
             end
             
             % Use previous estimate to refine our search for minimal distance point.
-            options = optimset('MaxIter', 20);
-            eta = fminsearch(@(l) norm(vpolyval(obj.poly, l) - h), obj.eta, options);
+            % options = optimset('MaxIter', 100);
+            % eta = fminsearch(@(l) norm(vpolyval(obj.poly, l) - h)^2, obj.eta, options);
+            dpoly = polydiff(obj.poly, 1);
+
+            eta = obj.eta;
+            ferror = @(l) norm(h - vpolyval(obj.poly, l))^2;
+            fgrad = @(l) -2*dot(h - vpolyval(obj.poly, l), vpolyval(dpoly, l));
+
+            alph = min(1, 1 / norm(vpolyval(dpoly, eta)));
+            
+            for i = 1:500 	
+                estimate = eta - alph * fgrad(eta);
+                improvement = ferror(estimate) - ferror(eta);
+                if( improvement < 0 )
+                    eta = estimate;
+                    alph = alph * 1.2;
+                else
+                    alph = alph * 0.7;
+                    continue;
+                end
+                
+                if norm(fgrad(eta)) <= 1e-6
+                    break
+                end
+            end
         end
     end
-    
+
     methods(Access = private)
         function storeDataRow(obj)
             if size(obj.solveXi, 2) > obj.NDataStored + 1
@@ -124,6 +152,7 @@ classdef(Abstract) SpliningRobot < handle
                 obj.solveEta(:, (obj.NDataStored+1):(obj.NDataStored+obj.BlockSize)) = 0;
                 obj.solveX(:, (obj.NDataStored+1):(obj.NDataStored+obj.BlockSize)) = 0;
                 obj.solveS(:, (obj.NDataStored+1):(obj.NDataStored+obj.BlockSize)) = 0;
+                obj.solveU((obj.NDataStored+1):(obj.NDataStored+obj.BlockSize)) = 0;
             end
             
             f = obj.NDataStored + 1;
@@ -133,6 +162,7 @@ classdef(Abstract) SpliningRobot < handle
             obj.solveEta(:, f) = obj.eta;
             obj.solveXi(:, f) = obj.xi;
             obj.solveS(:, f) = obj.s;
+            obj.solveU(f) = obj.u;
             
             obj.NDataStored = f;
         end

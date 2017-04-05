@@ -7,7 +7,6 @@ classdef FramePathFollower < SpliningRobot
     end
     
     properties
-        s;
         ds;
         dds;
         ddds;
@@ -21,7 +20,7 @@ classdef FramePathFollower < SpliningRobot
     methods
         function obj = FramePathFollower(pp)
             obj = obj@SpliningRobot(pp);
-            %obj.gain = 10 * obj.gain;
+            obj.gain = [-1/0.1^2, -2 / 0.1];
         end
     end
         
@@ -70,44 +69,6 @@ classdef FramePathFollower < SpliningRobot
 
             lff = dot( de2dx * f, dh * f );
             lgf = dot( e(:,2), dh * df * g );
-            
-            % dXi2dx = d/dx [ xi2 ]
-            % xi2 = dot((eye(2) - dsdh) * dhdt, e(:,2)) +
-            %       dot(h - s, de2dx * f);
-%             dXi2dx = zeros(1, length(obj.x));
-% 
-%             for xi = 1:length(dXi2dx)
-%                 % Part A : d/dx [ dot((eye(2) - dsdh) * dhdt, e(:,2)) ]
-% 
-%                     % dot((eye(2) - dsdh) * dhdt, d/dx [ e(:,2) ] )
-%                     A1 = dot((eye(2) - dsdh) * dhdt, de2dx(:, xi));
-% 
-%                     % dot( d/dx [ (eye(2) - dsdh) * dhdt ], e(:,2) )
-%                     A2 = dot(-(de1dx(:,xi)*e(:,1)' + e(:,1)*de1dx(:,xi)') * dhdt + (eye(2) - dsdh) * dh * df(:, xi), e(:,2));
-% 
-%                 % Part B : d/dx [ dot( h - s, de2dx * f ) ]
-% 
-%                     % dot( d/dx [ h - s ], de2dx * f )
-%                     B1 = dot( dh(:,xi) - dsdh * dh(:,xi), de2dx * f );
-% 
-%                     % Helper Second Derivatives!
-%                     ddwdhdx = ( cSpeed * de1dx(:, xi)' - e(:,1)' / cSpeed * dot(ds, dds * dwdh * dh(:, xi)) ) / (cSpeed^2);
-%                     dde1dldx = ( cSpeed * ddds * dwdh * dh(:,xi) - dds / (cSpeed^2) * dot(ds, dds * dwdh * dh(:,xi)) ) / (cSpeed^2) - ...
-%                                dot(dds,ds)/(cSpeed^2) * de1dx(:,xi) - ... dot(dds, ds)/dot(ds,ds) * d/dx [e(:,1)]
-%                                (    (cSpeed^2) * (dot(ddds * dwdh * dh(:,xi), ds) + dot(dds, dds * dwdh * dh(:,xi))) - ... d/dx [ dot(dds, ds)/dot(ds,ds) ] e(:,1)
-%                                     2 * dot(dds, ds) * dot(ds * dwdh * dh(:,xi), ds) ) ...
-%                                 / (cSpeed^4) * e(:,1);
-%                     dde1ddx = ( dde1dldx * dwdh + obj.dedl(:,1) * ddwdhdx ) * dh;
-%                     dde2ddx = R * dde1ddx;
-% 
-%                     % dot( h - s, d/dx[ de2dx * f ] )
-%                     B2 = dot( h - s, dde2ddx * f + de2dx * df(:, xi) );
-% 
-%                 dXi2dx(xi) = A1 + A2 + B1 + B2;
-%             end
-% 
-%             lff = dXi2dx * f;
-%             lgf = dXi2dx * g;
         end
     end
     
