@@ -84,7 +84,7 @@ The kinematic system dynamics are
 \end{align}
 The robot must at some unspecified finite time arrive at a given goal region $\mathcal{G}\subset\mathcal{T}$. Note there is no restriction in how it arrives in this region other than it does so safely. Starting at time $t=0$ and then at a regular time interval $\Delta$, the robot observes the world and decides, based on the observation, whether a new plan is required to approach the goal region. This may occur when the robot observes a new obstacle that the robot's currently planned path intersects. The simplest and most widely used planning algorithms involve the generation of a tree that explores the current model of the world. This family of algorithms generate a sequence of waypoints. From planning stage a path $\vec{\sigma}: [0,1]\subset\R\to\mathcal{T}$ with $\vec{\sigma}(1)\in\mathcal{G}$ is generated.
 
-The path $\vec{\sigma}_a$ is fed into the path following control which guides the robot over time towards, and along, the path in order to arrive in $\mathcal{G}$. Further, the control algorithm must converge towards the path in a manner that is both guaranteed and as fast as possible. It must also faithfully follow the path in order to reduce the chances of re-planning. Given that the robot may not have a perfect model of the world, i.e, is not aware of all obstacles, a replan may still occur. The planning algorithm is required to design a new $\vec{\sigma}_b$ so as to preserve any properties the control algorithm requires to stay on the trajectory continuously.
+The path $\vec{\sigma}_a$ is fed into the path following control which guides the robot over time towards, and along, the path in order to arrive in $\mathcal{G}$. Further, the control algorithm must converge towards the path in a manner that is both guaranteed and as fast as possible. It must also faithfully follow the path in order to reduce the chances of re-planning. Given that the robot may not have a perfect model of the world, i.e, is not aware of all obstacles, a re-plan may still occur. The planning algorithm is required to design a new $\vec{\sigma}_b$ so as to preserve any properties the control algorithm requires to stay on the trajectory continuously.
 
 \chapter{Control}\label{sec:control}
 Three control strategies are considered for path following. The simplest controller, in terms of design and implementation, is the point-chasing controller. The other two techniques rely on the approach of transverse feedback linearization which decomposes the path following problem into transverse and tangential dynamical systems. This section assumes the path is of the form in \eqref{eqn:quintic}. The matrix representation of a quintic polynomial is chosen for succinct representation.
@@ -284,7 +284,7 @@ The controller implementation follows from Section \ref{sec:general_tfl}.
 \subsection{Serret-Frenet Frame Approach}
 \nomenclature{$\Rot{\theta}$}{Counter-clockwise rotation matrix in $\R^2$ of angle $\theta$.}
 \nomenclature{$B_\epsilon(\vec{x})$}{Open ball of radius $\epsilon$ centred about $\vec{x}$ in the appropriate vector space.}
-First we must impose an extra regularity condition, in addition to Assumption \ref{ass:self_intersect}, in order for this controller to work.
+First we must impose an extra regularity condition, in addition to \eqref{ass:self_intersect}, in order for this controller to work.
 \begin{assumption}[Existence and Uniqueness of Nearest Point]
     Let $C\defineas\vec{\sigma}([0,1])$. There exists an open, connected set $\mathcal{U}\subset\mathcal{T}$ such that,
     \begin{equation*}
@@ -324,7 +324,7 @@ Our definition of the basis vectors as well as the restriction to planar curves 
                         &= \frac{\left|\trans{\vec{\sigma}''(\lambda)}\vec{e}_2\right|}{\enorm{\vec{\sigma}'(\lambda)}^2}.\\
     \end{align*}
 \end{proof}
-The curvature describes how much the curve's tangent changes. This is necessary to describe succintly the derivative of the basis vectors. One more result will allow us to derive the derivatives of the basis vectors.
+The curvature describes how much the curve's tangent changes. This is necessary to describe succinctly the derivative of the basis vectors. One more result will allow us to derive the derivatives of the basis vectors.
 \begin{lemma}
     Let $\vec{v}_1, \vec{v}_2:\R\to S^1$ such that both are $C^2$. Additionally, let $\vec{v}_2(\lambda)=\Rot{\frac{\pi}{2}}\vec{v}_1(\lambda)$. Then, the derivatives of the vectors are related by a (parameter-varying) scalar multiple of the opposing vector such that
     \begin{align*}
@@ -481,7 +481,7 @@ We begin with a necessary result from Dynamical System Theory.
 \end{theorem}
 Now we prove the main result,
 \begin{theorem}[Singularity-Free Orbits for Serret Frenet Control]
-    For any $M>0$, there exists a choice of gains --- $\vec{k}_1$, $\vec{k}_2$ --- such that an open, connected set $\Omega$ is made positively invariant by some Lyaponuv function $V(\vec{\xi})$ under the closed loop dynamics of \eqref{eqn:tfl_linear}. Furthermore, the set $\Omega$ has the properties
+    For any $M>0$, there exists a choice of gains --- $\vec{k}_1$, $\vec{k}_2$ --- such that an open, connected set $\Omega$ is made positively invariant by some Lyapunov function $V(\vec{\xi})$ under the closed loop dynamics of \eqref{eqn:tfl_linear}. Furthermore, the set $\Omega$ has the properties
     \begin{enumerate}
         \item $\sup_{\vec{\xi}\in\Omega}{\left|\vec{\xi}_1\right|} = M$
         \item $\sup_{\vec{\xi}\in\Omega}{\left|\vec{\xi}_2\right|} = v$.
@@ -494,7 +494,7 @@ Now we prove the main result,
         \dot{V} &=  4\vec{\xi}_1^3\dot{\vec{\xi}}_1 + 2a\left[\vec{\xi}_1\dot{\vec{\xi}}_1\vec{\xi}_2^2 + \vec{\xi}_1^2\vec{\xi}_2\dot{\vec{\xi}}_2\right] + 4b\vec{\xi}_2^3\dot{\vec{\xi}}_2\\
                     &=  4\vec{\xi}_1^3\vec{\xi}_2 + 2a\left[\vec{\xi}_1\vec{\xi}_2^3 + \vec{k}_1\vec{\xi}_1^3\vec{\xi}_2 + \vec{k}_2\vec{\xi}_1^2\vec{\xi}_2^2\right] + 4b\vec{k}_1\vec{\xi}_1\vec{\xi}_2^3 + 4b\vec{k}_2\vec{\xi}_2^4\\
                     &=  \left(4+2a\vec{k}_1\right)\vec{\xi}_1^3\vec{\xi}_2 + 2\left(a + 2b\vec{k}_1\right)\vec{\xi}_1\vec{\xi}_2^3 + \left(2a\vec{\xi}_1^2\vec{\xi}_2^2 + 4b\vec{\xi}_2^4\right)\vec{k}_2\\
-                    &=  \left(4+2a\vec{k}_1\right)\vec{\xi}_1^3\vec{\xi}_2 + 2\left(a + 2Dv^{-4}\vec{k}_1\right)\vec{\xi}_1\vec{\xi}_2^3 + \left(2a\vec{\xi}_1^2\vec{\xi}_2^2 + 4Dvd^{-4}\vec{\xi}_2^4\right)\vec{k}_2.\\
+                    &=  \left(4+2a\vec{k}_1\right)\vec{\xi}_1^3\vec{\xi}_2 + 2\left(a + 2Dv^{-4}\vec{k}_1\right)\vec{\xi}_1\vec{\xi}_2^3 + \left(2a\vec{\xi}_1^2\vec{\xi}_2^2 + 4Dv^{-4}\vec{\xi}_2^4\right)\vec{k}_2.\\
     \end{align*}
     Impose the requirement that cross-terms vanish identically. This gives the restrictions on $a$ and $\vec{k}_1$,
     \begin{align*}
@@ -504,7 +504,7 @@ Now we prove the main result,
     Then $V(\vec{\xi}) = \vec{\xi}_1^4 + 2\frac{\sqrt{D}}{v^2}\vec{\xi}_1^2\vec{\xi}_2^2 + \frac{D}{v^4}\vec{\xi}_2^4$. Interestingly, this is the square of a quadratic form. Specifically,
     $$
         V(\vec{\xi}) = \left[\vec{\xi}_1^2 + \left(\frac{\sqrt{D}}{v^2}\right)\vec{\xi}_2^2 \right]^2.
-    $$ We now know that $\dot{V} = \left(2a\vec{\xi}_1^2\vec{\xi}_2^2 + 4Dv^{-4}\vec{\xi}_2^4\right)\vec{k}_2$. Now, $\dot{V} < 0$ if $g_2 < 0$. We therefore impose $g_2 < 0$. $\Omega$ is now made positively invariant as a consequence of \eqref{thm:lasalle}. Specify $D = M^4$ and find
+    $$ We now know that $\dot{V} = \left(2a\vec{\xi}_1^2\vec{\xi}_2^2 + 4Dv^{-4}\vec{\xi}_2^4\right)\vec{k}_2$. Now, $\dot{V} < 0$ if $\vec{k}_2 < 0$. We therefore impose $\vec{k}_2 < 0$. $\Omega$ is now made positively invariant as a consequence of \eqref{thm:lasalle}. Specify $D = M^4$ and find
     \begin{align*}
         \sup_{\vec{\xi}\in\Omega}{\left|\vec{\xi}_1\right|} &= M\\
         \sup_{\vec{\xi}\in\Omega}{\left|\vec{\xi}_2\right|} &= v
@@ -556,7 +556,7 @@ The Rapidly exploring Randomized Tree (RRT) algorithm is made up of the followin
 \end{enumerate}
 The tree grows in a random fashion from the initial point, rapidly expanding in $\mathcal{T}$ until the goal can be reached. Once the algorithm completes, the programmer need only back-trace from the goal point towards the initial point; trees have a unique path from any node to the root. There are a few design decisions that can be made here in order to improve performance of the algorithm. One is to store obstacles in what is known as an R-Tree. R-Trees --- a tree whose name stems from rectangle, not rapidly nor randomized --- are a data structure that stores data according to their position in space. R-Tree creates bins that store objects with  bounding rectangles that are near one another. This data structure has an \emph{average} time complexity that is $\mathcal{O}(\log_2 N)$ where $N$ is the number of elements --- in our case, obstacles --- for searching for an element in the two dimensional case. As a result, it scales well even for large spatial domains where many obstacles may exist.
 
-One reason this algorithm was developed was to help developers incorporate constraints on the generated path. Recall that the effectiveness of the transverse feedback linearization is related to the curvature of the path. The higher the curvature, the more sensitive the controller is to small errors. Moreover, it may be the case that Assumption \ref{ass:unique_operating} fails to hold. One way to easily restrict the curvature is to ensure the angle of edge $(x_n, x)$ doesn't deviate strongly from the angle of the line $(x_m, x_n)$. That is, the angle between any two successive edges is restricted to $\pi\pm\theta_{lim}$.
+One reason this algorithm was developed was to help developers incorporate constraints on the generated path. Recall that the effectiveness of the transverse feedback linearization is related to the curvature of the path. The higher the curvature, the more sensitive the controller is to small errors. Moreover, it may be the case that \eqref{ass:unique_operating} fails to hold. One way to easily restrict the curvature is to ensure the angle of edge $(x_n, x)$ doesn't deviate strongly from the angle of the line $(x_m, x_n)$. That is, the angle between any two successive edges is restricted to $\pi\pm\theta_{lim}$.
 
 Another approach attempted is to enforce a distance constraint that is related to the angle. Unfortunately, this does not work as well in practice, as it greatly reduces the exploration performance of RRT~\cite{Yang14}. RRT also does not by itself provide guarantees about the `directness' of the path generated. This can changed by creating a bias towards sampling near $\mathcal{G}$\cite{LaValle06}\cite{Yang14}. We chose to randomly sample candidate points from a truncated-normal distribution centred about $\mathcal{G}$. The variance was chosen to ensure about 70-95\% of points are within the task space. This allowed for biased sampling that still properly explored the domain.
 
@@ -597,7 +597,7 @@ Figure \ref{fig:tfl_compare_task} isn't precise enough to verify performance, so
     \label{fig:tfl_compare_tracking}
 \end{figure}
 
-Figure \ref{fig:tfl_compare_state} indicates a possible problem. The Sylvester controller generates states that are orders of magnitude larger than the Serret-Frenet controller, which may mean that the Sylvester controller generates large control signals. Keep in mind that the error in position was less than $10^{-1}$! However, the control signals generated are still comparable to the Serret-Frenet controller, as shown in Figure \ref{fig:control_effort}. This must mean that the Lie derivative(s) in the Sylvester method are of a similar magnitude of the state. However, there is no reason to expect this method will extend well for large polynomial over a large domain since the scaling of large magnitude states into relatively small control signals may lead to a non-negligible loss of precision. This is of serious concern for practical implementations of these controllers for high-order polynomials and/or large paths.
+Figure \ref{fig:tfl_compare_state} indicates a possible problem. The Sylvester controller generates states that are orders of magnitude larger than the Serret-Frenet controller, which may mean that the Sylvester controller generates large control signals. Keep in mind that the error in position was less than $10^{-1}$! However, the control signals generated are still comparable to the Serret-Frenet controller, as shown in Figure \ref{fig:control_effort}. This must mean that the Lie derivative(s) in the Sylvester method are of a similar magnitude of the state. However, there is no reason to expect this method will extend well for large polynomials over a large domain since the scaling of large magnitude states into relatively small control signals may lead to a non-negligible loss of precision. This is of serious concern for practical implementations of these controllers for high-order polynomials and/or large paths.
 \begin{figure}[!htbp]
     \centering
     \includegraphics{images/tfl_compare_state.eps}

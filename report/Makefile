@@ -10,7 +10,7 @@ $(TEMP):
 clean:
 	rm -rf $(TEMP)/* $(PROJECT)
 
-%.pdf: $(TEMP) %.tex report.bib
+%.pdf: $(TEMP) %.tex report_body.tex formatting.tex math_util.tex packages.tex report.bib
 	pdflatex -output-directory $(TEMP) $*.tex
 	cd $(TEMP) && makeindex $*.nlo -s nomencl.ist -o $*.nls
 	pdflatex -output-directory $(TEMP) $*.tex
