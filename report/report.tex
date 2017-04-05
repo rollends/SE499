@@ -89,7 +89,14 @@ This report assumes proficiency in multi-variable calculus and basic control the
 In practice, planning algorithms generally precede control. However this report instead defers discussion of planning until after describing control methodologies in Section \ref{sec:control}. This content placement is intended to give the reader a better intuition for the decisions made at planning stage.
 
 \section{Problem Statement}
-Let the task space, without loss of generality, be the rectangular space  $\mathcal{T}_{(\bar{x},\bar{y})} = \{(x,y)\in\mathbb{R}^2 : 0 \leq x \leq \bar{x} \wedge 0 \leq y \leq \bar{y}\}$. For simplicity, consider the kinematic model of a differential drive robot with the combined position and orientation state vector $\vec{x}=\trans{(x,y,\theta)}\in\R^3$. The robot has a, possibly controllable, forward velocity $v\in\R$ and a controllable turning rate $u\in\R$. The observation is simply the robot's current position. $v$ is assumed to be positive. The kinematic system dynamics are then
+Let the task space, without loss of generality, be the rectangular space  $\mathcal{T}_{(\bar{x},\bar{y})} = \{(x,y)\in\mathbb{R}^2 : 0 \leq x \leq \bar{x} \wedge 0 \leq y \leq \bar{y}\}$. For simplicity, consider the kinematic model of a differential drive robot with the combined position and orientation state vector $\vec{x}=\trans{(x,y,\theta)}\in\R^3$. The robot has a, possibly controllable, forward velocity $v\in\R$ and a controllable turning rate $u\in\R$. The observation is simply the robot's current position. $v$ is assumed to be positive.
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=3in]{images/diffdrive_kin_model.png}
+    \caption{Kinematic model of differential drive robot. (a) is the direction vector along which the robot is currently facing, denoted by $\vec{g}_v$. That is a function of $x_3$, the angle of the vector with respect to $x$-axis which is shown at (b). (c) is the rate at which the robot turns and is controlled by $u$.}
+    \label{fig:basic_kinematic_model}
+\end{figure}
+The kinematic system dynamics are
 \begin{align}
     \mat{G}(\vec{x}) &=
         \begin{bmatrix}
@@ -105,7 +112,7 @@ Let the task space, without loss of generality, be the rectangular space  $\math
         \mat{G}(\vec{x})
         \begin{bmatrix} u \\ v \end{bmatrix}
     \label{eqn:basic_kinematic_model}
-\end{align}
+\end{align}.
 The robot must at some unspecified finite time arrive at a given goal region $\mathcal{G}\subset\mathcal{T}$. Note there is no restriction in how it arrives in this region other than it does so safely. Starting at time $t=0$ and then at a regular time interval $\Delta_p$, the robot observes the world and decides, based on the observation, whether a new plan is required to approach the goal region. This may occur when the robot observes a new obstacle that the robot's currently planned path intersects. The simplest and most widely used planning algorithms involve the generation of a tree that explores the current model of the world. This family of algorithms generate a sequence of waypoints. This is then used to generate a path $\vec{\sigma}: [0,1]\subset\R\to\mathcal{T}$ with $\vec{\sigma}(1)\in\mathcal{G}$.
 
 The path $\vec{\sigma}_a$ is fed into the path following control which guides the robot over time towards, and along, the path in order to arrive in $\mathcal{G}$. Further, the control algorithm must converge towards the path in a manner that is both guaranteed and as fast as possible. It must also faithfully follow the path in order to reduce the chances of re-planning. Given that the robot may not have a perfect model of the world, i.e, is not aware of all obstacles, a replan may still occur. The planning algorithm is required to design a new $\vec{\sigma}_b$ so as to preserve any properties the control algorithm requires to stay on the trajectory continuously.
