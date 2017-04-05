@@ -10,7 +10,7 @@ $(TEMP):
 clean:
 	rm -rf $(TEMP)/* $(PROJECT)
 
-%.pdf: $(TEMP) %.tex %.bib
+%.pdf: $(TEMP) %.tex report.bib
 	pdflatex -output-directory $(TEMP) $*.tex
 	cd $(TEMP) && makeindex $*.nlo -s nomencl.ist -o $*.nls
 	pdflatex -output-directory $(TEMP) $*.tex
@@ -18,9 +18,9 @@ clean:
 	pdflatex -output-directory $(TEMP) $*.tex
 	cp $(TEMP)/$@ $@
 
-%.pdf: $(TEMP) %.tex
-	pdflatex -output-directory $(TEMP) $*.tex
-	pdflatex -output-directory $(TEMP) $*.tex
+abstract.pdf: $(TEMP) abstract.tex
+	pdflatex -output-directory $(TEMP) abstract.tex
+	pdflatex -output-directory $(TEMP) abstract.tex
 	cp $(TEMP)/$@ $@
 
 .PHONY: all clean
