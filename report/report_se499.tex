@@ -253,15 +253,15 @@ Under the assumption that this error is independent of robot heading we can furt
     =
     \begin{bmatrix}
         \xi_2 \\
-        \lie{\vec{g}}\lie{\vec{f}}\vec{\xi}_1(\vec{x}) u + \lie{\vec{f}}^2 \vec{\xi}_1(\vec{x})
+        \lie{\vec{b}}\lie{\vec{f}}\vec{\xi}_1(\vec{x}) u + \lie{\vec{f}}^2 \vec{\xi}_1(\vec{x})
     \end{bmatrix}
     \label{eqn:tfl_dynamics}
 \end{equation}
 Equation \ref{eqn:tfl_dynamics} can be solved for the control signal. The general form of the control is,
 \begin{equation}
-    u = \frac{ \vec{\dot{\xi}}_2 - \lie{\vec{f}}^2 \vec{\xi}_1(\vec{x}) }{ \lie{\vec{g}}\lie{\vec{f}}\vec{\xi}_1(\vec{x}) } \label{eqn:tfl_general_control}
+    u = \frac{ \vec{\dot{\xi}}_2 - \lie{\vec{f}}^2 \vec{\xi}_1(\vec{x}) }{ \lie{\vec{b}}\lie{\vec{f}}\vec{\xi}_1(\vec{x}) } \label{eqn:tfl_general_control}
 \end{equation}
-The reader may wonder under what conditions $\lie{\vec{g}}\lie{\vec{f}}\vec{\xi}_1(\vec{x})$ is non-zero. This is not apparent, although intuition may guide us. Since $\lie{\vec{g}}\lie{\vec{f}}\vec{\xi}_1(\vec{x})$ scales the control signal we expect it to vanish whenever the control signal has no instantaneous impact on the change in the orthogonal error. This may occur, for example, when the differential robot is facing towards the nearest point.
+The reader may wonder under what conditions $\lie{\vec{b}}\lie{\vec{f}}\vec{\xi}_1(\vec{x})$ is non-zero. This is not apparent, although intuition may guide us. Since $\lie{\vec{b}}\lie{\vec{f}}\vec{\xi}_1(\vec{x})$ scales the control signal we expect it to vanish whenever the control signal has no instantaneous impact on the change in the orthogonal error. This may occur, for example, when the differential robot is facing towards the nearest point.
 
 Leaving the discussion of singularities aside, we set $\vec{\dot{\xi}}_2 = \trans{\vec{k}}\vec{\xi}$ with $\vec{k}\in\R^2$ in order to close the loop. The resulting partial dynamical system is
 \begin{equation}
